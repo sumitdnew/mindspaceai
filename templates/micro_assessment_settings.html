@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Settings - MindSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+            --info-color: #4299e1;
+            --light-bg: #f7fafc;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e2e8f0 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: white;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+            padding: 1.5rem;
+        }
+
+        .form-switch {
+            padding-left: 2.5em;
+        }
+
+        .form-switch .form-check-input {
+            width: 3em;
+            height: 1.5em;
+            margin-left: -2.5em;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+            background-position: left center;
+            border-radius: 2em;
+            transition: background-position .15s ease-in-out;
+        }
+
+        .form-switch .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+        }
+
+        .time-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .time-option {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .time-option:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .time-option.selected {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .setting-group {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .setting-group h6 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, var(--success-color) 0%, #38a169 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(72, 187, 120, 0.4);
+            color: white;
+        }
+
+        .info-badge {
+            background: var(--info-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .frequency-option {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .frequency-option:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .frequency-option.selected {
+            border-color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .frequency-option h6 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .frequency-option p {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain me-2"></i>MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('smart_assessment.micro_assessment_dashboard') }}">
+                    <i class="fas fa-chart-line me-1"></i>Dashboard
+                </a>
+                <a class="nav-link active" href="{{ url_for('smart_assessment.notification_settings') }}">
+                    <i class="fas fa-bell me-1"></i>Settings
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Smart Notification Settings
+                        </h3>
+                        <p class="mb-0 mt-2 opacity-75">Customize when and how you receive check-in reminders</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST">
+                            <!-- Frequency Settings -->
+                            <div class="setting-group">
+                                <h6>
+                                    <i class="fas fa-clock me-2"></i>Notification Frequency
+                                    <span class="info-badge">Smart</span>
+                                </h6>
+                                
+                                <div class="frequency-option" onclick="selectFrequency('adaptive')">
+                                    <input type="radio" name="frequency_type" value="adaptive" 
+                                           {% if not settings or settings.frequency_type == 'adaptive' %}checked{% endif %} style="display: none;">
+                                    <h6><i class="fas fa-brain me-2"></i>Adaptive (Recommended)</h6>
+                                    <p>AI learns your patterns and sends notifications at optimal times</p>
+                                </div>
+                                
+                                <div class="frequency-option" onclick="selectFrequency('fixed')">
+                                    <input type="radio" name="frequency_type" value="fixed" 
+                                           {% if settings and settings.frequency_type == 'fixed' %}checked{% endif %} style="display: none;">
+                                    <h6><i class="fas fa-clock me-2"></i>Fixed Schedule</h6>
+                                    <p>Receive notifications at regular intervals throughout the day</p>
+                                </div>
+                                
+                                <div class="frequency-option" onclick="selectFrequency('smart')">
+                                    <input type="radio" name="frequency_type" value="smart" 
+                                           {% if settings and settings.frequency_type == 'smart' %}checked{% endif %} style="display: none;">
+                                    <h6><i class="fas fa-magic me-2"></i>Smart Timing</h6>
+                                    <p>Advanced AI that considers your mood patterns and daily routine</p>
+                                </div>
+                            </div>
+
+                            <!-- Timing Settings -->
+                            <div class="setting-group">
+                                <h6><i class="fas fa-calendar me-2"></i>Timing Preferences</h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Minimum interval between notifications</label>
+                                        <select class="form-select" name="min_interval_hours">
+                                            <option value="1" {% if not settings or settings.min_interval_hours == 1 %}selected{% endif %}>1 hour</option>
+                                            <option value="2" {% if settings and settings.min_interval_hours == 2 %}selected{% endif %}>2 hours</option>
+                                            <option value="3" {% if settings and settings.min_interval_hours == 3 %}selected{% endif %}>3 hours</option>
+                                            <option value="4" {% if settings and settings.min_interval_hours == 4 %}selected{% endif %}>4 hours</option>
+                                            <option value="6" {% if settings and settings.min_interval_hours == 6 %}selected{% endif %}>6 hours</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Maximum interval between notifications</label>
+                                        <select class="form-select" name="max_interval_hours">
+                                            <option value="4" {% if not settings or settings.max_interval_hours == 4 %}selected{% endif %}>4 hours</option>
+                                            <option value="6" {% if settings and settings.max_interval_hours == 6 %}selected{% endif %}>6 hours</option>
+                                            <option value="8" {% if settings and settings.max_interval_hours == 8 %}selected{% endif %}>8 hours</option>
+                                            <option value="12" {% if settings and settings.max_interval_hours == 12 %}selected{% endif %}>12 hours</option>
+                                            <option value="24" {% if settings and settings.max_interval_hours == 24 %}selected{% endif %}>24 hours</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preferred Times -->
+                            <div class="setting-group">
+                                <h6><i class="fas fa-sun me-2"></i>Preferred Times</h6>
+                                <p class="text-muted small">Select times when you'd like to receive notifications</p>
+                                
+                                <div class="time-selector" id="preferredTimes">
+                                    <div class="time-option" data-hour="9">9 AM</div>
+                                    <div class="time-option" data-hour="12">12 PM</div>
+                                    <div class="time-option" data-hour="15">3 PM</div>
+                                    <div class="time-option" data-hour="18">6 PM</div>
+                                    <div class="time-option" data-hour="21">9 PM</div>
+                                </div>
+                                
+                                <input type="hidden" name="preferred_times" id="preferred_times_input" 
+                                       value="{% if settings and settings.preferred_times %}{{ settings.preferred_times | join(',') }}{% else %}9,12,15,18{% endif %}">
+                            </div>
+
+                            <!-- Context-Aware Settings -->
+                            <div class="setting-group">
+                                <h6><i class="fas fa-map-marker-alt me-2"></i>Context-Aware Settings</h6>
+                                <p class="text-muted small">Avoid notifications during certain activities</p>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="avoid_meetings" value="true" 
+                                           {% if not settings or settings.avoid_meetings %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Avoid during meetings</strong>
+                                        <br><small class="text-muted">Detect calendar events and avoid notifications</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="avoid_sleep_hours" value="true" 
+                                           {% if not settings or settings.avoid_sleep_hours %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Avoid during sleep hours</strong>
+                                        <br><small class="text-muted">No notifications between 10 PM and 8 AM</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="avoid_social_events" value="true" 
+                                           {% if settings and settings.avoid_social_events %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Avoid during social events</strong>
+                                        <br><small class="text-muted">Detect when you're with others</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="avoid_work_focus" value="true" 
+                                           {% if not settings or settings.avoid_work_focus %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Avoid during focused work</strong>
+                                        <br><small class="text-muted">Detect when you're in deep work mode</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Content Settings -->
+                            <div class="setting-group">
+                                <h6><i class="fas fa-comment me-2"></i>Notification Content</h6>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="show_coping_suggestions" value="true" 
+                                           {% if not settings or settings.show_coping_suggestions %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Include coping skill suggestions</strong>
+                                        <br><small class="text-muted">Show personalized coping strategies in notifications</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" name="show_progress_insights" value="true" 
+                                           {% if not settings or settings.show_progress_insights %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Include progress insights</strong>
+                                        <br><small class="text-muted">Show mood trends and achievements</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="emergency_contact_visible" value="true" 
+                                           {% if not settings or settings.emergency_contact_visible %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Show emergency support access</strong>
+                                        <br><small class="text-muted">Include crisis support options in notifications</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Clinical Settings -->
+                            <div class="setting-group">
+                                <h6><i class="fas fa-stethoscope me-2"></i>Clinical Settings</h6>
+                                <p class="text-muted small">Settings for high-risk patients and crisis prevention</p>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>High-Risk Mode:</strong> If you're experiencing severe symptoms, 
+                                    we'll increase notification frequency and add crisis support options.
+                                </div>
+                                
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="crisis_mode_enabled" value="true" 
+                                           {% if not settings or settings.crisis_mode_enabled %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>Enable crisis mode</strong>
+                                        <br><small class="text-muted">Automatically adjust settings for crisis prevention</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="save-btn">
+                                    <i class="fas fa-save me-2"></i>Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Frequency selection
+        function selectFrequency(type) {
+            // Remove selection from all options
+            document.querySelectorAll('.frequency-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selection to clicked option
+            event.currentTarget.classList.add('selected');
+            
+            // Check the radio button
+            const radio = event.currentTarget.querySelector('input[type="radio"]');
+            radio.checked = true;
+        }
+
+        // Time selection
+        document.querySelectorAll('.time-option').forEach(option => {
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+                updatePreferredTimes();
+            });
+        });
+
+        function updatePreferredTimes() {
+            const selectedTimes = Array.from(document.querySelectorAll('.time-option.selected'))
+                .map(option => option.dataset.hour)
+                .sort((a, b) => parseInt(a) - parseInt(b));
+            
+            document.getElementById('preferred_times_input').value = selectedTimes.join(',');
+        }
+
+        // Initialize preferred times
+        function initializePreferredTimes() {
+            const preferredTimesInput = document.getElementById('preferred_times_input');
+            const selectedTimes = preferredTimesInput.value.split(',').map(t => t.trim());
+            
+            document.querySelectorAll('.time-option').forEach(option => {
+                if (selectedTimes.includes(option.dataset.hour)) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Initialize frequency selection
+        function initializeFrequencySelection() {
+            const selectedFrequency = document.querySelector('input[name="frequency_type"]:checked');
+            if (selectedFrequency) {
+                selectedFrequency.closest('.frequency-option').classList.add('selected');
+            }
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePreferredTimes();
+            initializeFrequencySelection();
+        });
+    </script>
+</body>
+</html>

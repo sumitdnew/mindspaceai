@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Micro-Assessment Dashboard - MindSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+            --info-color: #4299e1;
+            --light-bg: #f7fafc;
+            --dark-bg: #2d3748;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e2e8f0 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: white;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+            padding: 1.5rem;
+        }
+
+        .quick-checkin-btn {
+            background: linear-gradient(135deg, var(--success-color) 0%, #38a169 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .quick-checkin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(72, 187, 120, 0.4);
+            color: white;
+        }
+
+        .emergency-btn {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #e53e3e 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(245, 101, 101, 0.3);
+        }
+
+        .emergency-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 101, 101, 0.4);
+            color: white;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .streak-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #744210;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .mood-emoji {
+            font-size: 2rem;
+            margin: 0 5px;
+        }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+        }
+
+        .progress-ring circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .achievement-card {
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-action-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+            color: white;
+        }
+
+        .context-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 2px;
+        }
+
+        .context-home { background: #e6fffa; color: #065666; }
+        .context-work { background: #fef5e7; color: #92400e; }
+        .context-social { background: #f3e8ff; color: #581c87; }
+        .context-outdoors { background: #ecfdf5; color: #065f46; }
+
+        .time-ago {
+            color: #a0aec0;
+            font-size: 0.8rem;
+        }
+
+        .engagement-score {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain me-2"></i>MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('patient_dashboard') }}">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+                <a class="nav-link active" href="{{ url_for('smart_assessment.micro_assessment_dashboard') }}">
+                    <i class="fas fa-chart-line me-1"></i>Micro-Assessment
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h2 class="mb-0">
+                                    <i class="fas fa-brain me-2"></i>Smart Micro-Assessment Dashboard
+                                </h2>
+                                <p class="mb-0 mt-2 opacity-75">Real-time mood and context tracking for optimal mental health support</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <a href="{{ url_for('smart_assessment.micro_assessment_checkin') }}" class="btn quick-checkin-btn me-2">
+                                    <i class="fas fa-plus me-2"></i>Quick Check-in
+                                </a>
+                                <button class="btn emergency-btn" onclick="showEmergencySupport()">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Emergency
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Engagement Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="metric-value engagement-score">
+                        {% if engagement and engagement.engagement_score %}
+                            {{ "%.1f"|format(engagement.engagement_score * 10) }}
+                        {% else %}
+                            0.0
+                        {% endif %}
+                    </div>
+                    <div class="metric-label">Engagement Score</div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ (engagement.engagement_score * 100) if engagement and engagement.engagement_score else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="metric-value text-success">
+                        {% if engagement %}
+                            {{ engagement.current_streak_days }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <div class="metric-label">Current Streak (Days)</div>
+                    {% if engagement and engagement.current_streak_days > 0 %}
+                        <div class="streak-badge mt-2">
+                            <i class="fas fa-fire me-1"></i>{{ engagement.current_streak_days }} Day{{ 's' if engagement.current_streak_days != 1 else '' }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="metric-value text-info">
+                        {% if engagement %}
+                            {{ engagement.total_check_ins }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <div class="metric-label">Total Check-ins</div>
+                    {% if engagement and engagement.avg_response_time_seconds %}
+                        <small class="text-muted">{{ "%.1f"|format(engagement.avg_response_time_seconds / 60) }} min avg response</small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="metric-value text-warning">
+                        {% if engagement and engagement.completion_rate %}
+                            {{ "%.0f"|format(engagement.completion_rate * 100) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="metric-label">Completion Rate</div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ (engagement.completion_rate * 100) if engagement and engagement.completion_rate else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Assessments and Insights -->
+        <div class="row">
+            <!-- Recent Assessments -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Assessments
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_assessments %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Mood</th>
+                                            <th>Energy</th>
+                                            <th>Stress</th>
+                                            <th>Context</th>
+                                            <th>Coping</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for assessment in recent_assessments %}
+                                        <tr>
+                                            <td>
+                                                <div>{{ assessment.timestamp.strftime('%H:%M') }}</div>
+                                                <div class="time-ago">{{ assessment.timestamp.strftime('%b %d') }}</div>
+                                            </td>
+                                            <td>
+                                                <span class="mood-emoji">{{ assessment.mood_emoji }}</span>
+                                                <div class="small">{{ assessment.mood_rating }}/10</div>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-info" role="progressbar" 
+                                                         style="width: {{ assessment.energy_level * 10 }}%">
+                                                        {{ assessment.energy_level }}/10
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                                         style="width: {{ assessment.stress_level * 10 }}%">
+                                                        {{ assessment.stress_level }}/10
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if assessment.context_data %}
+                                                    <span class="context-indicator context-{{ assessment.context_data.location_type }}">
+                                                        {{ assessment.context_data.location_type.title() }}
+                                                    </span>
+                                                    {% if assessment.context_data.activity_type %}
+                                                        <div class="small text-muted">{{ assessment.context_data.activity_type.title() }}</div>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">No context</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if assessment.coping_skill_used %}
+                                                    <span class="badge bg-success">{{ assessment.coping_skill_used.title() }}</span>
+                                                    {% if assessment.coping_effectiveness %}
+                                                        <div class="small text-muted">{{ assessment.coping_effectiveness }}/10</div>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">None</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No assessments yet</h5>
+                                <p class="text-muted">Start your journey with a quick check-in!</p>
+                                <a href="{{ url_for('smart_assessment.micro_assessment_checkin') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>First Check-in
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights and Achievements -->
+            <div class="col-md-4">
+                <!-- Quick Actions -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>Quick Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('smart_assessment.micro_assessment_checkin') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-2"></i>New Assessment
+                            </a>
+                            <a href="{{ url_for('mood_tracking.mood_tracker') }}" class="btn btn-outline-info">
+                                <i class="fas fa-chart-area me-2"></i>Mood Analytics
+                            </a>
+                            <a href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}" class="btn btn-outline-success">
+                                <i class="fas fa-spa me-2"></i>Mindfulness
+                            </a>
+                            <button class="btn btn-outline-warning" onclick="showNotificationSettings()">
+                                <i class="fas fa-bell me-2"></i>Notification Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements -->
+                {% if engagement and engagement.achievements_earned %}
+                <div class="card achievement-card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-trophy me-2"></i>Achievements
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for achievement in engagement.achievements_earned %}
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-medal text-warning me-2"></i>
+                                <span class="small">{{ achievement.replace('_', ' ').title() }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Insights -->
+                <div class="card insight-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>Smart Insights
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if engagement and engagement.current_streak_days >= 3 %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-fire me-2"></i>
+                                <strong>Great streak!</strong> You've been consistent for {{ engagement.current_streak_days }} days.
+                            </div>
+                        {% endif %}
+                        
+                        {% if engagement and engagement.completion_rate and engagement.completion_rate < 0.5 %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Try coping skills!</strong> Using coping strategies can improve your mood.
+                            </div>
+                        {% endif %}
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Next check-in:</strong> Based on your patterns, we'll remind you at the optimal time.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <a href="{{ url_for('smart_assessment.micro_assessment_checkin') }}" class="floating-action-btn">
+        <i class="fas fa-plus"></i>
+    </a>
+
+    <!-- Emergency Support Modal -->
+    <div class="modal fade" id="emergencyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Emergency Support
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>If you're in crisis or having thoughts of self-harm:</strong></p>
+                    <ul>
+                        <li><strong>National Suicide Prevention Lifeline:</strong> 988</li>
+                        <li><strong>Crisis Text Line:</strong> Text HOME to 741741</li>
+                        <li><strong>Emergency Services:</strong> 911</li>
+                    </ul>
+                    <p class="mb-0"><strong>You're not alone.</strong> Help is available 24/7.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="tel:988" class="btn btn-danger">
+                        <i class="fas fa-phone me-2"></i>Call 988
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showEmergencySupport() {
+            new bootstrap.Modal(document.getElementById('emergencyModal')).show();
+        }
+
+        function showNotificationSettings() {
+            // Redirect to notification settings page
+            window.location.href = "{{ url_for('smart_assessment.notification_settings') }}";
+        }
+
+        // Auto-refresh engagement metrics every 30 seconds
+        setInterval(function() {
+            // You could add AJAX call here to refresh metrics
+        }, 30000);
+
+        // Check for new notifications
+        function checkNotifications() {
+            fetch("{{ url_for('smart_assessment.check_notification') }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.should_send) {
+                        // Show notification prompt
+                        showNotificationPrompt(data.prompt);
+                    }
+                })
+                .catch(error => console.error('Error checking notifications:', error));
+        }
+
+        function showNotificationPrompt(prompt) {
+            // Create notification prompt
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+            notification.innerHTML = `
+                <strong>Time for a check-in!</strong><br>
+                ${prompt}<br><br>
+                <a href="{{ url_for('smart_assessment.micro_assessment_checkin') }}" class="btn btn-sm btn-primary">Check-in Now</a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+        }
+
+        // Check for notifications every 5 minutes
+        setInterval(checkNotifications, 300000);
+    </script>
+</body>
+</html>

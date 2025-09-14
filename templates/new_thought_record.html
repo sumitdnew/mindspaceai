@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Thought Record - Thought Detective</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .detective-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .step {
+            background: #e9ecef;
+            color: #6c757d;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-line {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: #e9ecef;
+            z-index: 1;
+        }
+
+        .emotion-wheel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .emotion-option {
+            background: #f8f9fa;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .emotion-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .emotion-option.selected {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .emotion-emoji {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .emotion-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .intensity-slider {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .intensity-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-detective {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-detective:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .btn-outline-detective {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-detective:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .prompt-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .prompt-text {
+            color: #667eea;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .prompt-example {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .confidence-meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .ai-suggestion {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .ai-suggestion.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">🧠 MindSpace ML</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link active" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-search"></i> New Investigation</h1>
+            <p>Step-by-step thought analysis and cognitive restructuring</p>
+        </div>
+
+        <form method="POST" id="thoughtRecordForm">
+            <!-- Step Indicator -->
+            <div class="detective-card">
+                <div class="step-indicator">
+                    <div class="step-line"></div>
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                    <div class="step" id="step4">4</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Situation -->
+            <div class="detective-card" id="step1-content">
+                <h3><i class="fas fa-map-marker-alt"></i> Step 1: The Situation</h3>
+                <p class="text-muted">Describe what happened that triggered your thoughts and emotions.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Situation Category</label>
+                    <select class="form-select" name="situation_category" required>
+                        <option value="">Select a category...</option>
+                        <option value="work">Work/Professional</option>
+                        <option value="social">Social/Relationships</option>
+                        <option value="health">Health/Wellness</option>
+                        <option value="family">Family</option>
+                        <option value="academic">Academic/Education</option>
+                        <option value="financial">Financial</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Describe the Situation</label>
+                    <div class="prompt-box">
+                        <div class="prompt-text">💡 <strong>Prompt:</strong> What specifically happened? Who was involved? When and where did it occur?</div>
+                        <div class="prompt-example">Example: "During my team meeting today, my manager criticized my presentation in front of everyone."</div>
+                    </div>
+                    <textarea class="form-control" name="situation_description" rows="4" placeholder="Describe the situation that triggered your thoughts..." required></textarea>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn-detective" onclick="nextStep(2)">Next: Emotions <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 2: Emotions -->
+            <div class="detective-card" id="step2-content" style="display: none;">
+                <h3><i class="fas fa-heart"></i> Step 2: Emotional Response</h3>
+                <p class="text-muted">Identify your primary emotion and its intensity.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Primary Emotion</label>
+                    <div class="emotion-wheel">
+                        <div class="emotion-option" data-emotion="anxiety">
+                            <div class="emotion-emoji">😰</div>
+                            <div class="emotion-name">Anxiety</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="anger">
+                            <div class="emotion-emoji">😠</div>
+                            <div class="emotion-name">Anger</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="sadness">
+                            <div class="emotion-emoji">😢</div>
+                            <div class="emotion-name">Sadness</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="fear">
+                            <div class="emotion-emoji">😨</div>
+                            <div class="emotion-name">Fear</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="frustration">
+                            <div class="emotion-emoji">😤</div>
+                            <div class="emotion-name">Frustration</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="disappointment">
+                            <div class="emotion-emoji">😞</div>
+                            <div class="emotion-name">Disappointment</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="embarrassment">
+                            <div class="emotion-emoji">😳</div>
+                            <div class="emotion-name">Embarrassment</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="guilt">
+                            <div class="emotion-emoji">😔</div>
+                            <div class="emotion-name">Guilt</div>
+                        </div>
+                        <div class="emotion-option" data-emotion="other">
+                            <div class="emotion-emoji">🤔</div>
+                            <div class="emotion-name">Other</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="primary_emotion" id="selected_emotion" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Emotion Intensity (1-10)</label>
+                    <input type="range" class="intensity-slider" name="emotion_intensity" min="1" max="10" value="5" id="emotion_intensity">
+                    <div class="intensity-labels">
+                        <span>Mild (1)</span>
+                        <span>Moderate (5)</span>
+                        <span>Intense (10)</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-primary" id="intensity_value">5</span>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn-outline-detective me-2" onclick="prevStep(1)"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="button" class="btn-detective" onclick="nextStep(3)">Next: Thoughts <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 3: Thoughts -->
+            <div class="detective-card" id="step3-content" style="display: none;">
+                <h3><i class="fas fa-brain"></i> Step 3: Automatic Thoughts</h3>
+                <p class="text-muted">What thoughts went through your mind during this situation?</p>
+
+                <div class="form-group">
+                    <label class="form-label">Your Initial Thought</label>
+                    <div class="prompt-box">
+                        <div class="prompt-text">💡 <strong>Prompt:</strong> What did you think about yourself, others, or the situation? What did you tell yourself?</div>
+                        <div class="prompt-example">Example: "I'm terrible at presentations. Everyone thinks I'm incompetent."</div>
+                    </div>
+                    <textarea class="form-control" name="initial_thought" rows="4" placeholder="What thoughts went through your mind..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">How confident are you in this thought? (1-10)</label>
+                    <input type="range" class="intensity-slider" name="thought_confidence" min="1" max="10" value="5" id="thought_confidence">
+                    <div class="confidence-labels">
+                        <span>Not at all (1)</span>
+                        <span>Somewhat (5)</span>
+                        <span>Completely (10)</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-primary" id="confidence_value">5</span>
+                    </div>
+                </div>
+
+                <div class="ai-suggestion" id="distortion-suggestion">
+                    <h5><i class="fas fa-robot"></i> AI Detective Analysis</h5>
+                    <div id="distortion-content"></div>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn-outline-detective me-2" onclick="prevStep(2)"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="button" class="btn-detective" onclick="nextStep(4)">Next: Evidence <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 4: Evidence -->
+            <div class="detective-card" id="step4-content" style="display: none;">
+                <h3><i class="fas fa-search"></i> Step 4: Evidence Analysis</h3>
+                <p class="text-muted">Let's examine the evidence for and against your thought.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Evidence Supporting Your Thought</label>
+                    <div class="prompt-box">
+                        <div class="prompt-text">💡 <strong>Prompt:</strong> What facts or experiences support this thought?</div>
+                        <div class="prompt-example">Example: "I stumbled over my words during the presentation."</div>
+                    </div>
+                    <div id="supporting-evidence-container">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="supporting_evidence[]" placeholder="Add supporting evidence...">
+                            <button type="button" class="btn btn-outline-secondary" onclick="addEvidenceField('supporting')"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Evidence Against Your Thought</label>
+                    <div class="prompt-box">
+                        <div class="prompt-text">💡 <strong>Prompt:</strong> What facts or experiences contradict this thought?</div>
+                        <div class="prompt-example">Example: "I've given successful presentations before."</div>
+                    </div>
+                    <div id="contradicting-evidence-container">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="contradicting_evidence[]" placeholder="Add contradicting evidence...">
+                            <button type="button" class="btn btn-outline-secondary" onclick="addEvidenceField('contradicting')"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn-outline-detective me-2" onclick="prevStep(3)"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="submit" class="btn-detective">Complete Investigation <i class="fas fa-check"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentStep = 1;
+
+        function nextStep(step) {
+            if (validateCurrentStep()) {
+                document.getElementById(`step${currentStep}-content`).style.display = 'none';
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                document.getElementById(`step${currentStep}`).classList.add('completed');
+                
+                currentStep = step;
+                document.getElementById(`step${currentStep}-content`).style.display = 'block';
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                if (step === 3) {
+                    analyzeThought();
+                }
+            }
+        }
+
+        function prevStep(step) {
+            document.getElementById(`step${currentStep}-content`).style.display = 'none';
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            
+            currentStep = step;
+            document.getElementById(`step${currentStep}-content`).style.display = 'block';
+            document.getElementById(`step${currentStep}`).classList.add('active');
+        }
+
+        function validateCurrentStep() {
+            const currentContent = document.getElementById(`step${currentStep}-content`);
+            const requiredFields = currentContent.querySelectorAll('[required]');
+            
+            for (let field of requiredFields) {
+                if (!field.value.trim()) {
+                    field.focus();
+                    return false;
+                }
+            }
+            
+            if (currentStep === 2 && !document.getElementById('selected_emotion').value) {
+                alert('Please select an emotion');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Emotion selection
+        document.querySelectorAll('.emotion-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.emotion-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selected_emotion').value = this.dataset.emotion;
+            });
+        });
+
+        // Intensity sliders
+        document.getElementById('emotion_intensity').addEventListener('input', function() {
+            document.getElementById('intensity_value').textContent = this.value;
+        });
+
+        document.getElementById('thought_confidence').addEventListener('input', function() {
+            document.getElementById('confidence_value').textContent = this.value;
+        });
+
+        // Evidence fields
+        function addEvidenceField(type) {
+            const container = document.getElementById(`${type}-evidence-container`);
+            const newField = document.createElement('div');
+            newField.className = 'input-group mb-2';
+            newField.innerHTML = `
+                <input type="text" class="form-control" name="${type}_evidence[]" placeholder="Add ${type} evidence...">
+                <button type="button" class="btn btn-outline-danger" onclick="removeEvidenceField(this)"><i class="fas fa-minus"></i></button>
+            `;
+            container.appendChild(newField);
+        }
+
+        function removeEvidenceField(button) {
+            button.parentElement.remove();
+        }
+
+        // AI Thought Analysis
+        function analyzeThought() {
+            const thought = document.querySelector('textarea[name="initial_thought"]').value;
+            if (!thought.trim()) return;
+
+            fetch('/api/cognitive_distortions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ thought: thought })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.distortions && data.distortions.length > 0) {
+                    const content = document.getElementById('distortion-content');
+                    content.innerHTML = '<p><strong>Potential cognitive distortions detected:</strong></p>';
+                    
+                    data.distortions.forEach(distortion => {
+                        content.innerHTML += `
+                            <div class="mb-2">
+                                <strong>${distortion.type.replace('_', ' ').toUpperCase()}</strong> 
+                                (Confidence: ${distortion.confidence}/10)
+                                <br><small>${distortion.explanation}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('distortion-suggestion').classList.add('show');
+                }
+            })
+            .catch(error => {
+                console.error('Error analyzing thought:', error);
+            });
+        }
+    </script>
+</body>
+</html>

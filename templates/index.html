@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSpace ML - Mental Health AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hero-section {
+            padding: 100px 0;
+            color: white;
+            text-align: center;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .icon-large {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                🧠 MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                    <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="display-4 mb-4">🧠 MindSpace ML</h1>
+            <p class="lead mb-5">AI-Powered Mental Health Assessment & Support</p>
+            <p class="mb-5">Trained on 54,043+ real mental health samples for accurate crisis detection and personalized recommendations.</p>
+            
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-custom btn-lg">Go to Dashboard</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-custom btn-lg me-3">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg">Register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="icon-large">🔍</div>
+                    <h4>Crisis Detection</h4>
+                    <p>Advanced AI trained on real mental health data to detect crisis situations and provide immediate support.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="icon-large">🧠</div>
+                    <h4>Mental Health Assessment</h4>
+                    <p>Comprehensive analysis of depression, anxiety, and other mental health conditions using ML models.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="icon-large">💡</div>
+                    <h4>Personalized Recommendations</h4>
+                    <p>AI-generated recommendations based on individual risk assessment and mental health patterns.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4>📊 For Patients</h4>
+                    <ul class="list-unstyled">
+                        <li>✅ Anonymous mental health assessment</li>
+                        <li>✅ Crisis detection and intervention</li>
+                        <li>✅ Personalized recommendations</li>
+                        <li>✅ Progress tracking</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4>👨‍⚕️ For Providers</h4>
+                    <ul class="list-unstyled">
+                        <li>✅ Patient risk monitoring</li>
+                        <li>✅ Crisis alert system</li>
+                        <li>✅ Treatment recommendations</li>
+                        <li>✅ Data-driven insights</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p>&copy; 2024 MindSpace ML. AI-powered mental health support.</p>
+            <p><small>Trained on real mental health data for accurate assessments.</small></p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

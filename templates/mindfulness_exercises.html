@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindfulness & Breathing Exercises - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .exercise-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        .breathing-circle {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            transition: all 0.5s ease;
+        }
+        .breathing-circle.inhale { transform: scale(1.2); background: linear-gradient(45deg, #2196F3, #1976D2); }
+        .breathing-circle.exhale { transform: scale(0.8); background: linear-gradient(45deg, #FF9800, #F57C00); }
+        .controls { display: flex; justify-content: center; gap: 20px; margin: 30px 0; }
+        .control-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .start-btn { background: linear-gradient(45deg, #4CAF50, #45a049); color: white; }
+        .pause-btn { background: linear-gradient(45deg, #FF9800, #F57C00); color: white; }
+        .stop-btn { background: linear-gradient(45deg, #F44336, #D32F2F); color: white; }
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .exercise-option {
+            background: #f8f9fa;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .exercise-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+        .exercise-option.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .phq9-integration {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .recommendation-card {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .crisis-alert {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: #721c24;
+        }
+        .progress-indicator {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        .skill-level {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .skill-beginner { background: #d4edda; color: #155724; }
+        .skill-intermediate { background: #fff3cd; color: #856404; }
+        .skill-advanced { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">🧠 MindSpace ML</a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                    <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                    <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                    <a class="nav-link active" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                    <a class="nav-link" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                    <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                    <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- PHQ-9 Integration Panel -->
+        <div class="phq9-integration" id="phq9Integration" style="display: none;">
+            <h3><i class="fas fa-brain"></i> Personalized Care Integration</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>📊 Your PHQ-9 Profile</h5>
+                    <div id="phq9Profile">
+                        <p><strong>Current Severity:</strong> <span id="currentSeverity">Loading...</span></p>
+                        <p><strong>Last Assessment:</strong> <span id="lastAssessment">Loading...</span></p>
+                        <p><strong>Skill Level:</strong> <span id="skillLevel">Loading...</span></p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>🎯 Personalized Recommendations</h5>
+                    <div id="personalizedRecommendations">
+                        <p>Loading personalized recommendations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crisis Alert Panel -->
+        <div class="crisis-alert" id="crisisAlert" style="display: none;">
+            <h4><i class="fas fa-exclamation-triangle"></i> Crisis Support Available</h4>
+            <p>Based on your recent assessment, we have crisis intervention exercises available. These are designed to help you during difficult moments.</p>
+            <button class="btn btn-danger" onclick="showCrisisExercises()">
+                <i class="fas fa-shield-alt"></i> Access Crisis Exercises
+            </button>
+        </div>
+
+        <div class="header">
+            <h1><i class="fas fa-spa"></i> Mindfulness & Breathing</h1>
+            <p>Find your center with guided exercises and biofeedback</p>
+        </div>
+
+        <!-- Exercise Selection with PHQ-9 Integration -->
+        <div class="exercise-card">
+            <h2 class="text-center mb-4">Choose Your Practice</h2>
+            
+            <!-- Recommended Exercises Based on PHQ-9 -->
+            <div id="recommendedExercises" style="display: none;">
+                <h5><i class="fas fa-star"></i> Recommended for You</h5>
+                <div class="exercise-grid" id="recommendedGrid">
+                    <!-- Dynamically populated -->
+                </div>
+                <hr>
+            </div>
+            
+            <div class="exercise-grid">
+                <div class="exercise-option" data-exercise="box-breathing">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📦</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Box Breathing</div>
+                    <div style="color: #666;">Inhale for 4, hold for 4, exhale for 4, hold for 4. Perfect for stress relief.</div>
+                    <div class="skill-level skill-beginner">Beginner</div>
+                </div>
+                <div class="exercise-option" data-exercise="4-7-8-breathing">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🌙</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">4-7-8 Breathing</div>
+                    <div style="color: #666;">Inhale for 4, hold for 7, exhale for 8. Great for anxiety and sleep.</div>
+                    <div class="skill-level skill-intermediate">Intermediate</div>
+                </div>
+                <div class="exercise-option" data-exercise="mindful-breathing">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🌸</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Mindful Breathing</div>
+                    <div style="color: #666;">Natural breathing with awareness. Perfect for beginners.</div>
+                    <div class="skill-level skill-beginner">Beginner</div>
+                </div>
+                <div class="exercise-option" data-exercise="meditation">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🧘</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Guided Meditation</div>
+                    <div style="color: #666;">Body scan and mindfulness meditation with gentle guidance.</div>
+                    <div class="skill-level skill-intermediate">Intermediate</div>
+                </div>
+                <div class="exercise-option" data-exercise="crisis-breathing" style="display: none;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🆘</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Crisis Breathing</div>
+                    <div style="color: #666;">Emergency breathing technique for crisis moments.</div>
+                    <div class="skill-level skill-beginner">Crisis</div>
+                </div>
+                <div class="exercise-option" data-exercise="grounding-54321" style="display: none;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🌍</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Grounding 5-4-3-2-1</div>
+                    <div style="color: #666;">Grounding technique using your five senses.</div>
+                    <div class="skill-level skill-beginner">Crisis</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tracking -->
+        <div class="exercise-card">
+            <h3><i class="fas fa-chart-line"></i> Your Progress</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 id="totalSessions">0</h4>
+                        <p>Total Sessions</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 id="currentStreak">0</h4>
+                        <p>Day Streak</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 id="avgEffectiveness">0</h4>
+                        <p>Avg. Effectiveness</p>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-indicator">
+                <div class="progress-fill" id="weeklyProgress" style="width: 0%"></div>
+            </div>
+            <p class="text-center mt-2">Weekly Goal Progress</p>
+        </div>
+
+        <div class="exercise-card" id="breathingInterface" style="display: none;">
+            <h2 class="text-center mb-4" id="exerciseTitle">Breathing Exercise</h2>
+            <div class="breathing-circle" id="breathingCircle">
+                <span id="breathingText">Ready to begin</span>
+            </div>
+            <div class="text-center" style="font-size: 1.5rem; margin-bottom: 20px;" id="breathingInstruction">
+                Click start to begin your breathing practice
+            </div>
+            <div class="text-center" style="font-size: 3rem; font-weight: bold; margin: 20px 0;" id="timerDisplay">00:00</div>
+            <div class="controls">
+                <button class="control-btn start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button class="control-btn pause-btn" id="pauseBtn" disabled>
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button class="control-btn stop-btn" id="stopBtn" disabled>
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+            </div>
+        </div>
+
+        <!-- Biofeedback Panel -->
+        <div class="exercise-card" id="biofeedbackPanel" style="display: none;">
+            <h3 class="text-center mb-4"><i class="fas fa-heartbeat"></i> Biofeedback Metrics</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px;" id="heartRate">--</div>
+                    <div style="font-size: 0.9rem; color: #666;">Heart Rate (BPM)</div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px;" id="breathingRate">--</div>
+                    <div style="font-size: 0.9rem; color: #666;">Breathing Rate</div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px;" id="stressLevel">--</div>
+                    <div style="font-size: 0.9rem; color: #666;">Stress Level</div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px;" id="sessionProgress">0%</div>
+                    <div style="font-size: 0.9rem; color: #666;">Session Progress</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meditation Interface -->
+        <div class="exercise-card" id="meditationInterface" style="display: none;">
+            <h2 class="text-center mb-4">Guided Meditation</h2>
+            <div class="text-center" style="margin: 30px 0;">
+                <div style="width: 200px; height: 200px; border-radius: 50%; margin: 0 auto; background: linear-gradient(45deg, #9C27B0, #7B1FA2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; font-weight: bold; position: relative;">
+                    <span id="meditationTimer">10:00</span>
+                </div>
+            </div>
+            <div style="background: #e9ecef; border-radius: 10px; height: 10px; margin: 20px 0; overflow: hidden;">
+                <div style="height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); transition: width 0.3s ease; width: 0%;" id="meditationProgress"></div>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 15px; padding: 30px; margin: 30px 0;">
+                <h4>Session Steps:</h4>
+                <ul style="list-style: none; padding: 0;" id="sessionSteps">
+                    <li style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #007bff; transition: all 0.3s ease;" data-step="1">
+                        <span style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold;">1</span>
+                        Find a comfortable position and close your eyes
+                    </li>
+                    <li style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #007bff; transition: all 0.3s ease;" data-step="2">
+                        <span style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold;">2</span>
+                        Take three deep breaths to settle in
+                    </li>
+                    <li style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #007bff; transition: all 0.3s ease;" data-step="3">
+                        <span style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold;">3</span>
+                        Focus on your natural breath
+                    </li>
+                    <li style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #007bff; transition: all 0.3s ease;" data-step="4">
+                        <span style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold;">4</span>
+                        Notice thoughts without judgment
+                    </li>
+                    <li style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #007bff; transition: all 0.3s ease;" data-step="5">
+                        <span style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold;">5</span>
+                        Gently return to your breath
+                    </li>
+                </ul>
+            </div>
+            <div class="controls">
+                <button class="control-btn start-btn" id="meditationStartBtn">
+                    <i class="fas fa-play"></i> Start Meditation
+                </button>
+                <button class="control-btn stop-btn" id="meditationStopBtn" disabled>
+                    <i class="fas fa-stop"></i> End Session
+                </button>
+            </div>
+        </div>
+
+        <!-- Session Summary -->
+        <div class="exercise-card" id="sessionSummary" style="display: none;">
+            <h2 class="text-center mb-4">Session Complete!</h2>
+            <div class="text-center">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #28a745;"></i>
+                </div>
+                <h3 id="sessionDuration">Great job!</h3>
+                <p id="sessionMessage">You've completed your mindfulness practice.</p>
+                
+                <!-- Effectiveness Rating -->
+                <div class="mt-4">
+                    <h5>How effective was this session?</h5>
+                    <div class="rating-buttons">
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(1)">1</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(2)">2</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(3)">3</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(4)">4</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(5)">5</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(6)">6</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(7)">7</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(8)">8</button>
+                        <button class="btn btn-outline-secondary me-2" onclick="rateEffectiveness(9)">9</button>
+                        <button class="btn btn-outline-secondary" onclick="rateEffectiveness(10)">10</button>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button class="control-btn start-btn" onclick="startNewSession()">
+                        <i class="fas fa-redo"></i> Start New Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentExercise = null;
+        let isRunning = false;
+        let sessionTimer = null;
+        let breathingTimer = null;
+        let sessionStartTime = null;
+        let sessionEffectiveness = null;
+        
+        const breathingPatterns = {
+            'box-breathing': { inhale: 4, hold1: 4, exhale: 4, hold2: 4 },
+            '4-7-8-breathing': { inhale: 4, hold1: 7, exhale: 8, hold2: 0 },
+            'mindful-breathing': { inhale: 4, hold1: 0, exhale: 4, hold2: 0 },
+            'crisis-breathing': { inhale: 2, hold1: 2, exhale: 4, hold2: 0 }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeExerciseSelection();
+            initializeControls();
+            loadPHQ9Integration();
+            loadProgressData();
+        });
+
+        function initializeExerciseSelection() {
+            const exerciseOptions = document.querySelectorAll('.exercise-option');
+            
+            exerciseOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    exerciseOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentExercise = this.dataset.exercise;
+                    showExerciseInterface();
+                });
+            });
+        }
+
+        function showExerciseInterface() {
+            // Hide all interfaces
+            document.getElementById('breathingInterface').style.display = 'none';
+            document.getElementById('meditationInterface').style.display = 'none';
+            document.getElementById('sessionSummary').style.display = 'none';
+            document.getElementById('biofeedbackPanel').style.display = 'none';
+            
+            // Show appropriate interface
+            if (currentExercise === 'meditation') {
+                document.getElementById('meditationInterface').style.display = 'block';
+                document.getElementById('biofeedbackPanel').style.display = 'block';
+            } else {
+                // Show breathing interface
+                document.getElementById('breathingInterface').style.display = 'block';
+                document.getElementById('biofeedbackPanel').style.display = 'block';
+                
+                // Update exercise title
+                const titles = {
+                    'box-breathing': 'Box Breathing',
+                    '4-7-8-breathing': '4-7-8 Breathing',
+                    'mindful-breathing': 'Mindful Breathing',
+                    'crisis-breathing': 'Crisis Breathing',
+                    'grounding-54321': 'Grounding 5-4-3-2-1'
+                };
+                document.getElementById('exerciseTitle').textContent = titles[currentExercise] || 'Breathing Exercise';
+            }
+        }
+
+        function initializeControls() {
+            // Breathing controls
+            document.getElementById('startBtn').addEventListener('click', startBreathingSession);
+            document.getElementById('pauseBtn').addEventListener('click', pauseBreathingSession);
+            document.getElementById('stopBtn').addEventListener('click', stopBreathingSession);
+            
+            // Meditation controls
+            document.getElementById('meditationStartBtn').addEventListener('click', startMeditationSession);
+            document.getElementById('meditationStopBtn').addEventListener('click', stopMeditationSession);
+        }
+
+        function loadPHQ9Integration() {
+            // Load PHQ-9 integration data
+            fetch('/api/phq9_exercise_integration')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayPHQ9Integration(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading PHQ-9 integration:', error);
+                });
+        }
+
+        function displayPHQ9Integration(data) {
+            const integrationPanel = document.getElementById('phq9Integration');
+            const crisisAlert = document.getElementById('crisisAlert');
+            
+            if (data.show_integration) {
+                integrationPanel.style.display = 'block';
+                
+                // Update PHQ-9 profile
+                document.getElementById('currentSeverity').textContent = data.severity_level || 'Not assessed';
+                document.getElementById('lastAssessment').textContent = data.last_assessment || 'Not available';
+                document.getElementById('skillLevel').textContent = data.skill_level || 'Beginner';
+                
+                // Update recommendations
+                const recommendationsDiv = document.getElementById('personalizedRecommendations');
+                if (data.recommendations && data.recommendations.length > 0) {
+                    recommendationsDiv.innerHTML = data.recommendations.map(rec => 
+                        `<div class="recommendation-card">
+                            <strong>${rec.title}</strong><br>
+                            ${rec.description}
+                        </div>`
+                    ).join('');
+                } else {
+                    recommendationsDiv.innerHTML = '<p>No specific recommendations at this time.</p>';
+                }
+                
+                // Show recommended exercises
+                if (data.recommended_exercises && data.recommended_exercises.length > 0) {
+                    showRecommendedExercises(data.recommended_exercises);
+                }
+            }
+            
+            // Show crisis alert if needed
+            if (data.show_crisis_alert) {
+                crisisAlert.style.display = 'block';
+                showCrisisExercises();
+            }
+        }
+
+        function showRecommendedExercises(exercises) {
+            const recommendedSection = document.getElementById('recommendedExercises');
+            const recommendedGrid = document.getElementById('recommendedGrid');
+            
+            recommendedSection.style.display = 'block';
+            recommendedGrid.innerHTML = exercises.map(exercise => `
+                <div class="exercise-option recommended" data-exercise="${exercise.type}">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">${exercise.icon}</div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">${exercise.name}</div>
+                    <div style="color: #666;">${exercise.description}</div>
+                    <div class="skill-level skill-${exercise.difficulty}">${exercise.difficulty}</div>
+                </div>
+            `).join('');
+            
+            // Add click handlers for recommended exercises
+            document.querySelectorAll('.exercise-option.recommended').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.exercise-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentExercise = this.dataset.exercise;
+                    showExerciseInterface();
+                });
+            });
+        }
+
+        function showCrisisExercises() {
+            // Show crisis exercise options
+            document.querySelectorAll('[data-exercise="crisis-breathing"], [data-exercise="grounding-54321"]').forEach(exercise => {
+                exercise.style.display = 'block';
+            });
+        }
+
+        function loadProgressData() {
+            // Load progress data
+            fetch('/api/mindfulness_progress')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalSessions').textContent = data.total_sessions || 0;
+                        document.getElementById('currentStreak').textContent = data.current_streak || 0;
+                        document.getElementById('avgEffectiveness').textContent = data.avg_effectiveness || 0;
+                        document.getElementById('weeklyProgress').style.width = (data.weekly_progress || 0) + '%';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading progress data:', error);
+                });
+        }
+
+        function startBreathingSession() {
+            if (!currentExercise || breathingPatterns[currentExercise]) {
+                isRunning = true;
+                sessionStartTime = Date.now();
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = false;
+                
+                startBreathingCycle();
+                startSessionTimer();
+                startBiofeedback();
+            }
+        }
+
+        function startBreathingCycle() {
+            if (!isRunning) return;
+            
+            const pattern = breathingPatterns[currentExercise];
+            let phase = 'inhale';
+            let timeLeft = pattern.inhale;
+            
+            function updateBreathing() {
+                if (!isRunning) return;
+                
+                const circle = document.getElementById('breathingCircle');
+                const text = document.getElementById('breathingText');
+                const instruction = document.getElementById('breathingInstruction');
+                
+                circle.className = 'breathing-circle ' + phase;
+                text.textContent = timeLeft;
+                
+                const instructions = {
+                    'inhale': 'Inhale slowly...',
+                    'hold1': 'Hold...',
+                    'exhale': 'Exhale slowly...',
+                    'hold2': 'Hold...'
+                };
+                instruction.textContent = instructions[phase];
+                
+                timeLeft--;
+                
+                if (timeLeft < 0) {
+                    if (phase === 'inhale') {
+                        phase = 'hold1';
+                        timeLeft = pattern.hold1;
+                    } else if (phase === 'hold1') {
+                        phase = 'exhale';
+                        timeLeft = pattern.exhale;
+                    } else if (phase === 'exhale') {
+                        phase = 'hold2';
+                        timeLeft = pattern.hold2;
+                    } else {
+                        phase = 'inhale';
+                        timeLeft = pattern.inhale;
+                    }
+                }
+                
+                breathingTimer = setTimeout(updateBreathing, 1000);
+            }
+            
+            updateBreathing();
+        }
+
+        function pauseBreathingSession() {
+            isRunning = false;
+            clearTimeout(breathingTimer);
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            
+            document.getElementById('breathingCircle').className = 'breathing-circle';
+            document.getElementById('breathingText').textContent = 'Paused';
+            document.getElementById('breathingInstruction').textContent = 'Session paused. Click start to continue.';
+        }
+
+        function stopBreathingSession() {
+            isRunning = false;
+            clearTimeout(breathingTimer);
+            clearInterval(sessionTimer);
+            
+            // Show session summary
+            showSessionSummary();
+            
+            // Reset UI
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            
+            document.getElementById('breathingCircle').className = 'breathing-circle';
+            document.getElementById('breathingText').textContent = 'Session Complete';
+            document.getElementById('breathingInstruction').textContent = 'Great job! You\'ve completed your breathing practice.';
+        }
+
+        function startSessionTimer() {
+            let elapsed = 0;
+            
+            function updateTimer() {
+                if (!isRunning) return;
+                
+                elapsed++;
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timerDisplay').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                sessionTimer = setTimeout(updateTimer, 1000);
+            }
+            
+            updateTimer();
+        }
+
+        function startMeditationSession() {
+            isRunning = true;
+            sessionStartTime = Date.now();
+            
+            // Update UI
+            document.getElementById('meditationStartBtn').disabled = true;
+            document.getElementById('meditationStopBtn').disabled = false;
+            
+            // Start meditation timer (10 minutes)
+            let timeLeft = 600; // 10 minutes in seconds
+            const timerDisplay = document.getElementById('meditationTimer');
+            const progressBar = document.getElementById('meditationProgress');
+            
+            function updateMeditationTimer() {
+                if (!isRunning) return;
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update progress bar
+                const progress = ((600 - timeLeft) / 600) * 100;
+                progressBar.style.width = progress + '%';
+                
+                // Update session steps
+                updateSessionSteps(timeLeft);
+                
+                timeLeft--;
+                
+                if (timeLeft < 0) {
+                    // Session complete
+                    stopMeditationSession();
+                } else {
+                    sessionTimer = setTimeout(updateMeditationTimer, 1000);
+                }
+            }
+            
+            updateMeditationTimer();
+            startBiofeedback();
+        }
+
+        function updateSessionSteps(timeLeft) {
+            const steps = document.querySelectorAll('#sessionSteps li');
+            const stepNumbers = document.querySelectorAll('#sessionSteps span');
+            
+            // Determine current step based on time
+            let currentStepIndex = 0;
+            if (timeLeft > 480) currentStepIndex = 0; // First 2 minutes
+            else if (timeLeft > 360) currentStepIndex = 1; // Next 2 minutes
+            else if (timeLeft > 240) currentStepIndex = 2; // Next 2 minutes
+            else if (timeLeft > 120) currentStepIndex = 3; // Next 2 minutes
+            else currentStepIndex = 4; // Last 2 minutes
+            
+            steps.forEach((step, index) => {
+                step.style.borderLeftColor = '#007bff';
+                step.style.background = 'white';
+                stepNumbers[index].style.background = '#007bff';
+                
+                if (index < currentStepIndex) {
+                    step.style.borderLeftColor = '#6c757d';
+                    step.style.opacity = '0.7';
+                    stepNumbers[index].style.background = '#6c757d';
+                } else if (index === currentStepIndex) {
+                    step.style.borderLeftColor = '#28a745';
+                    step.style.background = '#d4edda';
+                    stepNumbers[index].style.background = '#28a745';
+                }
+            });
+        }
+
+        function stopMeditationSession() {
+            isRunning = false;
+            clearTimeout(sessionTimer);
+            
+            // Show session summary
+            showSessionSummary();
+            
+            // Reset UI
+            document.getElementById('meditationStartBtn').disabled = false;
+            document.getElementById('meditationStopBtn').disabled = true;
+        }
+
+        function startBiofeedback() {
+            // Simulate biofeedback data
+            setInterval(() => {
+                if (!isRunning) return;
+                
+                // Simulate heart rate (60-80 BPM during relaxation)
+                const heartRate = 65 + Math.random() * 10;
+                document.getElementById('heartRate').textContent = Math.round(heartRate);
+                
+                // Simulate breathing rate (12-16 breaths per minute)
+                const breathingRate = 14 + Math.random() * 2;
+                document.getElementById('breathingRate').textContent = Math.round(breathingRate);
+                
+                // Simulate stress level (1-10, decreasing over time)
+                const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+                const sessionProgress = Math.min(elapsed / 600, 1); // Assuming 10-minute session
+                const stressLevel = Math.max(1, 8 - (sessionProgress * 5));
+                document.getElementById('stressLevel').textContent = Math.round(stressLevel);
+                
+                // Update session progress
+                const progressPercent = Math.round(sessionProgress * 100);
+                document.getElementById('sessionProgress').textContent = progressPercent + '%';
+                
+            }, 2000);
+        }
+
+        function showSessionSummary() {
+            // Hide other interfaces
+            document.getElementById('breathingInterface').style.display = 'none';
+            document.getElementById('meditationInterface').style.display = 'none';
+            document.getElementById('biofeedbackPanel').style.display = 'none';
+            
+            // Show summary
+            document.getElementById('sessionSummary').style.display = 'block';
+            
+            // Calculate session duration
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('sessionDuration').textContent = 
+                `Session Duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Generate personalized message
+            const messages = [
+                "Excellent work! You've taken an important step for your mental health.",
+                "Great job completing your mindfulness practice!",
+                "Wonderful! Regular practice helps build resilience and calm.",
+                "Fantastic! You're building healthy habits for stress management."
+            ];
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            document.getElementById('sessionMessage').textContent = randomMessage;
+        }
+
+        function rateEffectiveness(rating) {
+            sessionEffectiveness = rating;
+            
+            // Save session data
+            saveSessionData();
+            
+            // Update UI to show rating was received
+            document.querySelectorAll('.rating-buttons button').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+            });
+            
+            event.target.classList.remove('btn-outline-secondary');
+            event.target.classList.add('btn-primary');
+        }
+
+        function saveSessionData() {
+            const sessionData = {
+                exercise_type: currentExercise,
+                duration: Math.floor((Date.now() - sessionStartTime) / 1000),
+                effectiveness_rating: sessionEffectiveness,
+                completion_status: 'completed'
+            };
+            
+            fetch('/api/save_mindfulness_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sessionData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Session saved successfully');
+                    loadProgressData(); // Refresh progress data
+                }
+            })
+            .catch(error => {
+                console.error('Error saving session:', error);
+            });
+        }
+
+        function startNewSession() {
+            // Reset everything
+            currentExercise = null;
+            isRunning = false;
+            sessionEffectiveness = null;
+            
+            // Hide summary
+            document.getElementById('sessionSummary').style.display = 'none';
+            
+            // Reset exercise selection
+            document.querySelectorAll('.exercise-option').forEach(opt => opt.classList.remove('selected'));
+            
+            // Clear timers
+            clearTimeout(breathingTimer);
+            clearInterval(sessionTimer);
+            
+            // Reset UI
+            resetBreathingUI();
+            resetMeditationUI();
+        }
+
+        function resetBreathingUI() {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            
+            document.getElementById('breathingCircle').className = 'breathing-circle';
+            document.getElementById('breathingText').textContent = 'Ready to begin';
+            document.getElementById('breathingInstruction').textContent = 'Click start to begin your breathing practice';
+            document.getElementById('timerDisplay').textContent = '00:00';
+        }
+
+        function resetMeditationUI() {
+            document.getElementById('meditationStartBtn').disabled = false;
+            document.getElementById('meditationStopBtn').disabled = true;
+            
+            document.getElementById('meditationTimer').textContent = '10:00';
+            document.getElementById('meditationProgress').style.width = '0%';
+            
+            // Reset session steps
+            const steps = document.querySelectorAll('#sessionSteps li');
+            const stepNumbers = document.querySelectorAll('#sessionSteps span');
+            steps.forEach((step, index) => {
+                step.style.borderLeftColor = '#007bff';
+                step.style.background = 'white';
+                step.style.opacity = '1';
+                stepNumbers[index].style.background = '#007bff';
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balanced Thought - Thought Detective</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .detective-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .thought-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .thought-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 3px solid transparent;
+        }
+
+        .thought-panel.initial {
+            border-color: #dc3545;
+        }
+
+        .thought-panel.balanced {
+            border-color: #28a745;
+        }
+
+        .thought-header {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .thought-header.initial {
+            background: #dc3545;
+        }
+
+        .thought-header.balanced {
+            background: #28a745;
+        }
+
+        .thought-content {
+            font-style: italic;
+            color: #495057;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #e9ecef;
+        }
+
+        .thought-content.initial {
+            border-left-color: #dc3545;
+        }
+
+        .thought-content.balanced {
+            border-left-color: #28a745;
+        }
+
+        .confidence-meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .confidence-slider {
+            flex: 1;
+        }
+
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .ai-suggestions {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .suggestion-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-text {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-reasoning {
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .outcome-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .outcome-item {
+            margin: 15px 0;
+        }
+
+        .outcome-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .rating-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .btn-balanced {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-balanced:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .btn-outline-balanced {
+            background: transparent;
+            color: #28a745;
+            border: 2px solid #28a745;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-balanced:hover {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-suggest {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-suggest:hover {
+            transform: translateY(-1px);
+            color: white;
+        }
+
+        .evidence-summary {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .evidence-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .evidence-stat {
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .stat-number {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .completion-celebration {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 30px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .celebration-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">🧠 MindSpace ML</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link active" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-balance-scale"></i> Balanced Thought</h1>
+            <p>Create a more balanced and realistic perspective</p>
+        </div>
+
+        <!-- Thought Comparison -->
+        <div class="detective-card">
+            <h3><i class="fas fa-exchange-alt"></i> Thought Comparison</h3>
+            <p class="text-muted">Compare your initial thought with a more balanced alternative.</p>
+
+            <div class="thought-comparison">
+                <!-- Initial Thought -->
+                <div class="thought-panel initial">
+                    <div class="thought-header initial">
+                        <i class="fas fa-exclamation-triangle"></i> Initial Thought
+                    </div>
+                    <div class="thought-content initial">
+                        "{{ record.initial_thought }}"
+                    </div>
+                    <div class="confidence-meter">
+                        <span>Confidence: {{ record.thought_confidence }}/10</span>
+                    </div>
+                </div>
+
+                <!-- Balanced Thought -->
+                <div class="thought-panel balanced">
+                    <div class="thought-header balanced">
+                        <i class="fas fa-check-circle"></i> Balanced Thought
+                    </div>
+                    <div class="thought-content balanced" id="balanced-thought-content">
+                        <em>Your balanced thought will appear here...</em>
+                    </div>
+                    <div class="confidence-meter">
+                        <span>Confidence: <span id="balanced-confidence-value">5</span>/10</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evidence Summary -->
+        <div class="detective-card">
+            <div class="evidence-summary">
+                <h4><i class="fas fa-search"></i> Evidence Summary</h4>
+                <div class="evidence-stats">
+                    <div class="evidence-stat">
+                        <div class="stat-number" id="supporting-count">0</div>
+                        <div>Supporting</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="stat-number" id="contradicting-count">0</div>
+                        <div>Contradicting</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="stat-number" id="avg-supporting">0</div>
+                        <div>Avg Support</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="stat-number" id="avg-contradicting">0</div>
+                        <div>Avg Against</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        <div class="detective-card">
+            <h3><i class="fas fa-robot"></i> AI Detective Suggestions</h3>
+            <p class="text-muted">Get AI-powered suggestions for balanced alternative thoughts.</p>
+
+            <div class="ai-suggestions" id="ai-suggestions">
+                <div class="loading" id="loading-suggestions">
+                    <i class="fas fa-spinner"></i>
+                    <p>Analyzing your thought and evidence...</p>
+                </div>
+                <div id="suggestions-content" style="display: none;">
+                    <!-- AI suggestions will appear here -->
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="button" class="btn-suggest" onclick="getAISuggestions()">
+                    <i class="fas fa-magic"></i> Get New Suggestions
+                </button>
+            </div>
+        </div>
+
+        <!-- Balanced Thought Creation -->
+        <div class="detective-card">
+            <h3><i class="fas fa-edit"></i> Create Your Balanced Thought</h3>
+            <p class="text-muted">Write a more balanced and realistic alternative to your initial thought.</p>
+
+            <form method="POST" id="balancedThoughtForm">
+                <div class="form-group">
+                    <label class="form-label">Balanced Thought</label>
+                    <div class="prompt-box" style="background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                        <div style="color: #28a745; font-style: italic; margin-bottom: 5px;">
+                            💡 <strong>Prompt:</strong> Consider the evidence on both sides. What's a more balanced, realistic perspective?
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.9rem;">
+                            Example: "While I made some mistakes in my presentation, I also had good points and have improved over time."
+                        </div>
+                    </div>
+                    <textarea class="form-control" name="balanced_thought" rows="4" 
+                              placeholder="Write your balanced thought here..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">How confident are you in this balanced thought? (1-10)</label>
+                    <input type="range" class="confidence-slider" name="balanced_confidence" min="1" max="10" value="5" id="balanced_confidence">
+                    <div class="confidence-labels">
+                        <span>Not at all (1)</span>
+                        <span>Somewhat (5)</span>
+                        <span>Completely (10)</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-success" id="confidence-display">5</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Outcome Assessment -->
+        <div class="detective-card">
+            <div class="outcome-section">
+                <h3><i class="fas fa-chart-line"></i> Outcome Assessment</h3>
+                <p class="text-muted">Rate how effective this thought challenging process was for you.</p>
+
+                <div class="outcome-item">
+                    <div class="outcome-label">How helpful was this thought challenging process? (1-10)</div>
+                    <input type="range" class="rating-slider" name="outcome_rating" min="1" max="10" value="5" id="outcome_rating">
+                    <div class="rating-labels">
+                        <span>Not helpful (1)</span>
+                        <span>Somewhat helpful (5)</span>
+                        <span>Very helpful (10)</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-primary" id="outcome-display">5</span>
+                    </div>
+                </div>
+
+                <div class="outcome-item">
+                    <div class="outcome-label">How much did your mood improve? (1-10)</div>
+                    <input type="range" class="rating-slider" name="mood_improvement" min="1" max="10" value="5" id="mood_improvement">
+                    <div class="rating-labels">
+                        <span>No improvement (1)</span>
+                        <span>Some improvement (5)</span>
+                        <span>Significant improvement (10)</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-success" id="mood-display">5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Celebration -->
+        <div class="completion-celebration" id="completion-celebration" style="display: none;">
+            <div class="celebration-icon">🎉</div>
+            <h3>Investigation Complete!</h3>
+            <p>You've successfully challenged your thought and created a more balanced perspective.</p>
+            <p><strong>Great detective work!</strong></p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="text-end">
+            <a href="{{ url_for('thought_record_dashboard') }}" class="btn-outline-balanced me-2">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <button type="button" class="btn-balanced" onclick="completeThoughtRecord()">
+                Complete Investigation <i class="fas fa-check"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize evidence stats (this would normally come from the backend)
+        document.getElementById('supporting-count').textContent = '2';
+        document.getElementById('contradicting-count').textContent = '3';
+        document.getElementById('avg-supporting').textContent = '3.5';
+        document.getElementById('avg-contradicting').textContent = '4.2';
+
+        // Confidence slider
+        document.getElementById('balanced_confidence').addEventListener('input', function() {
+            document.getElementById('confidence-display').textContent = this.value;
+            document.getElementById('balanced-confidence-value').textContent = this.value;
+        });
+
+        // Outcome rating sliders
+        document.getElementById('outcome_rating').addEventListener('input', function() {
+            document.getElementById('outcome-display').textContent = this.value;
+        });
+
+        document.getElementById('mood_improvement').addEventListener('input', function() {
+            document.getElementById('mood-display').textContent = this.value;
+        });
+
+        // AI Suggestions
+        function getAISuggestions() {
+            const loadingDiv = document.getElementById('loading-suggestions');
+            const contentDiv = document.getElementById('suggestions-content');
+            
+            loadingDiv.style.display = 'block';
+            contentDiv.style.display = 'none';
+
+            // Simulate AI API call
+            setTimeout(() => {
+                const suggestions = [
+                    {
+                        thought: "While I made some mistakes in my presentation, I also had good points and have improved over time.",
+                        reasoning: "This acknowledges both the current situation and your growth over time."
+                    },
+                    {
+                        thought: "The feedback was specific to this presentation, not a reflection of my overall abilities.",
+                        reasoning: "This separates the specific event from your general competence."
+                    },
+                    {
+                        thought: "I can learn from this experience and use it to improve my future presentations.",
+                        reasoning: "This focuses on growth and future improvement rather than dwelling on mistakes."
+                    }
+                ];
+
+                displaySuggestions(suggestions);
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+            }, 2000);
+        }
+
+        function displaySuggestions(suggestions) {
+            const contentDiv = document.getElementById('suggestions-content');
+            contentDiv.innerHTML = '';
+
+            suggestions.forEach((suggestion, index) => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'suggestion-item';
+                suggestionDiv.onclick = () => selectSuggestion(suggestion.thought);
+                
+                suggestionDiv.innerHTML = `
+                    <div class="suggestion-text">"${suggestion.thought}"</div>
+                    <div class="suggestion-reasoning">${suggestion.reasoning}</div>
+                `;
+                
+                contentDiv.appendChild(suggestionDiv);
+            });
+        }
+
+        function selectSuggestion(thought) {
+            document.querySelector('textarea[name="balanced_thought"]').value = thought;
+            document.getElementById('balanced-thought-content').innerHTML = `"${thought}"`;
+        }
+
+        function completeThoughtRecord() {
+            const form = document.getElementById('balancedThoughtForm');
+            const balancedThought = form.querySelector('textarea[name="balanced_thought"]').value;
+            const balancedConfidence = document.getElementById('balanced_confidence').value;
+            const outcomeRating = document.getElementById('outcome_rating').value;
+            const moodImprovement = document.getElementById('mood_improvement').value;
+
+            if (!balancedThought.trim()) {
+                alert('Please write a balanced thought before completing.');
+                return;
+            }
+
+            // Show completion celebration
+            document.getElementById('completion-celebration').style.display = 'block';
+
+            // Submit form after a short delay
+            setTimeout(() => {
+                const submitForm = document.createElement('form');
+                submitForm.method = 'POST';
+                submitForm.action = window.location.href;
+
+                // Add form data
+                const fields = {
+                    'balanced_thought': balancedThought,
+                    'balanced_confidence': balancedConfidence,
+                    'outcome_rating': outcomeRating,
+                    'mood_improvement': moodImprovement
+                };
+
+                for (let [name, value] of Object.entries(fields)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    submitForm.appendChild(input);
+                }
+
+                document.body.appendChild(submitForm);
+                submitForm.submit();
+            }, 3000);
+        }
+
+        // Load AI suggestions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            getAISuggestions();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Library - MindSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --accent-color: #FF9800;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 30px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+        }
+
+        .recommendation-section {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .mood-input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            font-weight: bold;
+            color: var(--dark-bg);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 30px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .category-tabs {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--light-bg);
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--dark-bg);
+            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .activity-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--primary-color);
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .activity-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .activity-card:active {
+            cursor: grabbing;
+        }
+
+        .activity-card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .activity-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--dark-bg);
+            margin-bottom: 5px;
+        }
+
+        .activity-category {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .activity-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .activity-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 10px;
+            background: var(--light-bg);
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1em;
+        }
+
+        .correlation-indicator {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .correlation-label {
+            font-size: 0.9em;
+            color: var(--success-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .correlation-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--dark-bg);
+        }
+
+        .activity-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .btn-secondary-custom {
+            background: var(--light-bg);
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .btn-secondary-custom:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .recommendation-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .mood-correlation-chart {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            color: var(--dark-bg);
+            min-width: 120px;
+        }
+
+        .filter-select {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px 12px;
+            background: white;
+            color: var(--dark-bg);
+            min-width: 150px;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .search-box {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px 15px;
+            background: white;
+            color: var(--dark-bg);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: var(--primary-color);
+        }
+
+        .no-activities {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                🧠 MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link active" href="{{ url_for('behavioral_activation_dashboard') }}">🚀 Activities</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <h1><i class="fas fa-book"></i> Activity Library</h1>
+            <p class="mb-0">Discover activities and see how they correlate with your mood</p>
+        </div>
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('patient_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('behavioral_activation_dashboard') }}">Activities</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Activity Library</li>
+            </ol>
+        </nav>
+
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number">{{ data.categories|length }}</div>
+                <div class="stat-label">Activity Categories</div>
+            </div>
+                         <div class="stat-card">
+                 <div class="stat-number">{{ data.activities|length }}</div>
+                 <div class="stat-label">Total Activities</div>
+             </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ data.correlations|length }}</div>
+                <div class="stat-label">Mood Correlations</div>
+            </div>
+                         <div class="stat-card">
+                 <div class="stat-number">{{ data.correlations|selectattr('correlation_strength', '>', 0.5)|list|length }}</div>
+                 <div class="stat-label">Positive Correlations</div>
+             </div>
+        </div>
+
+        <!-- Smart Recommendations -->
+        <div class="recommendation-section">
+            <h4><i class="fas fa-robot"></i> Get Personalized Recommendations</h4>
+            <p>Tell us about your current state to get activity suggestions tailored to you.</p>
+            
+            <div class="mood-input-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span>Current Mood</span>
+                                <span class="slider-value" id="moodValue">5</span>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="moodSlider" min="1" max="10" value="5" oninput="updateSlider('mood')">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span>Energy Level</span>
+                                <span class="slider-value" id="energyValue">5</span>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="energySlider" min="1" max="10" value="5" oninput="updateSlider('energy')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span>Social Preference</span>
+                                <span class="slider-value" id="socialValue">5</span>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="socialSlider" min="1" max="10" value="5" oninput="updateSlider('social')">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="slider-group">
+                            <label class="filter-label">Weather:</label>
+                            <select class="filter-select" id="weatherSelect">
+                                <option value="unknown">Unknown</option>
+                                <option value="sunny">Sunny</option>
+                                <option value="cloudy">Cloudy</option>
+                                <option value="rainy">Rainy</option>
+                                <option value="stormy">Stormy</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-custom" onclick="getRecommendations()">
+                        <i class="fas fa-magic"></i> Get Recommendations
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h5><i class="fas fa-filter"></i> Filter Activities</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Category:</label>
+                        <select class="filter-select" id="categoryFilter">
+                            <option value="">All Categories</option>
+                            {% for category in data.categories %}
+                            <option value="{{ category.name }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Energy Level:</label>
+                        <select class="filter-select" id="energyFilter">
+                            <option value="">Any Energy</option>
+                            <option value="1-3">Low (1-3)</option>
+                            <option value="4-6">Medium (4-6)</option>
+                            <option value="7-10">High (7-10)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Duration:</label>
+                        <select class="filter-select" id="durationFilter">
+                            <option value="">Any Duration</option>
+                            <option value="0-30">Short (0-30 min)</option>
+                            <option value="31-60">Medium (31-60 min)</option>
+                            <option value="61+">Long (60+ min)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Search:</label>
+                        <input type="text" class="search-box" id="searchBox" placeholder="Search activities...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Categories -->
+        <div class="category-tabs">
+            <ul class="nav nav-tabs" id="categoryTabs" role="tablist">
+                {% for category in data.categories %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ 'active' if loop.first else '' }}" 
+                            id="tab-{{ category.name|lower|replace(' ', '-') }}" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#content-{{ category.name|lower|replace(' ', '-') }}" 
+                            type="button" 
+                            role="tab">
+                        {{ category.icon }} {{ category.name }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <div class="tab-content" id="categoryTabContent">
+                {% for category in data.categories %}
+                <div class="tab-pane fade {{ 'show active' if loop.first else '' }}" 
+                     id="content-{{ category.name|lower|replace(' ', '-') }}" 
+                     role="tabpanel">
+                    
+                    <div class="activity-grid" id="grid-{{ category.name|lower|replace(' ', '-') }}">
+                        {% for activity in data.activities_by_category[category] %}
+                        <div class="activity-card" 
+                             data-activity-id="{{ activity.id }}"
+                             data-category="{{ category.name }}"
+                             data-energy="{{ activity.energy_cost }}"
+                             data-duration="{{ activity.estimated_duration }}"
+                             data-social="{{ activity.social_level }}"
+                             data-name="{{ activity.name|lower }}"
+                             draggable="true">
+                            
+                                                         {% set correlation = data.correlations|selectattr('activity_id', 'equalto', activity.id)|list|first %}
+                            {% if correlation and correlation.correlation_strength > 0.3 %}
+                            <div class="recommendation-badge">
+                                <i class="fas fa-star"></i> Recommended
+                            </div>
+                            {% endif %}
+                            
+                            <div class="activity-header">
+                                <div>
+                                    <div class="activity-title">{{ activity.name }}</div>
+                                    <div class="activity-category">{{ category.name }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-description">{{ activity.description }}</div>
+                            
+                            <div class="activity-metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Duration</div>
+                                    <div class="metric-value">{{ activity.estimated_duration }} min</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Energy</div>
+                                    <div class="metric-value">{{ activity.energy_cost }}/10</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Social</div>
+                                    <div class="metric-value">{{ (activity.social_level * 100)|round|int }}%</div>
+                                </div>
+                            </div>
+                            
+                            {% if correlation %}
+                            <div class="correlation-indicator">
+                                <div class="correlation-label">Mood Correlation</div>
+                                <div class="correlation-value">
+                                    {% if correlation.correlation_strength > 0.5 %}
+                                        <i class="fas fa-arrow-up text-success"></i> Strong Positive
+                                    {% elif correlation.correlation_strength > 0.2 %}
+                                        <i class="fas fa-arrow-up text-warning"></i> Moderate Positive
+                                    {% elif correlation.correlation_strength < -0.5 %}
+                                        <i class="fas fa-arrow-down text-danger"></i> Strong Negative
+                                    {% elif correlation.correlation_strength < -0.2 %}
+                                        <i class="fas fa-arrow-down text-warning"></i> Moderate Negative
+                                    {% else %}
+                                        <i class="fas fa-minus text-muted"></i> No Clear Pattern
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="activity-actions">
+                                <a href="{{ url_for('activity_planning') }}?activity={{ activity.id }}" class="btn btn-custom">
+                                    <i class="fas fa-plus"></i> Add to Plan
+                                </a>
+                                <button class="btn btn-secondary-custom" onclick="showActivityDetails({{ activity.id }})">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Mood Correlation Chart -->
+        <div class="mood-correlation-chart">
+            <h4><i class="fas fa-chart-line"></i> Activity-Mood Correlation Analysis</h4>
+            <canvas id="correlationChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Update slider values
+        function updateSlider(type) {
+            try {
+                const slider = document.getElementById(type + 'Slider');
+                const valueElement = document.getElementById(type + 'Value');
+                if (slider && valueElement) {
+                    const value = slider.value;
+                    valueElement.textContent = value;
+                }
+            } catch (error) {
+                console.error('Error updating slider:', error);
+            }
+        }
+
+        // Get AI recommendations
+        function getRecommendations() {
+            const mood = document.getElementById('moodSlider').value;
+            const energy = document.getElementById('energySlider').value;
+            const social = document.getElementById('socialSlider').value;
+            const weather = document.getElementById('weatherSelect').value;
+            
+            // Show loading state
+            document.querySelectorAll('.activity-card').forEach(card => {
+                card.style.opacity = '0.5';
+            });
+            
+            fetch('/api/behavioral_activation/recommendations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    current_mood: parseInt(mood),
+                    current_energy: parseInt(energy),
+                    social_preference: parseInt(social) / 10,
+                    weather: weather,
+                    time_of_day: 'any'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset opacity
+                document.querySelectorAll('.activity-card').forEach(card => {
+                    card.style.opacity = '1';
+                });
+                
+                // Highlight recommended activities
+                if (data.recommendations) {
+                    data.recommendations.forEach(rec => {
+                        const card = document.querySelector(`[data-name="${rec.name.toLowerCase()}"]`);
+                        if (card) {
+                            card.style.borderLeftColor = '#FF9800';
+                            card.style.boxShadow = '0 5px 15px rgba(255, 152, 0, 0.3)';
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error getting recommendations:', error);
+                // Reset opacity
+                document.querySelectorAll('.activity-card').forEach(card => {
+                    card.style.opacity = '1';
+                });
+            });
+        }
+
+        // Filter activities
+        function filterActivities() {
+            try {
+                const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+                const energyFilter = document.getElementById('energyFilter')?.value || '';
+                const durationFilter = document.getElementById('durationFilter')?.value || '';
+                const searchBox = document.getElementById('searchBox')?.value?.toLowerCase() || '';
+                
+                document.querySelectorAll('.activity-card').forEach(card => {
+                    let show = true;
+                    
+                    // Category filter
+                    if (categoryFilter && card.dataset.category !== categoryFilter) show = false;
+                    
+                    // Energy filter
+                    if (energyFilter) {
+                        const energy = parseInt(card.dataset.energy) || 0;
+                        const [min, max] = energyFilter.split('-').map(Number);
+                        if (energy < min || energy > max) show = false;
+                    }
+                    
+                    // Duration filter
+                    if (durationFilter) {
+                        const duration = parseInt(card.dataset.duration) || 0;
+                        const [min, max] = durationFilter.split('-').map(Number);
+                        if (duration < min || (max && duration > max)) show = false;
+                    }
+                    
+                    // Search filter
+                    if (searchBox && !card.dataset.name.includes(searchBox)) show = false;
+                    
+                    card.style.display = show ? 'block' : 'none';
+                });
+            } catch (error) {
+                console.error('Error filtering activities:', error);
+            }
+        }
+
+        // Show activity details (placeholder)
+        function showActivityDetails(activityId) {
+            try {
+                console.log('Showing details for activity:', activityId);
+                
+                // Find the activity element
+                const activityElement = document.querySelector(`[data-activity-id="${activityId}"]`);
+                if (activityElement) {
+                    const activityName = activityElement.querySelector('.activity-title')?.textContent || 'Unknown Activity';
+                    alert(`Activity Details: ${activityName}\n\nThis feature is coming soon!`);
+                } else {
+                    alert('Activity details feature coming soon!');
+                }
+            } catch (error) {
+                console.error('Error showing activity details:', error);
+                alert('Error showing activity details. Please try again.');
+            }
+        }
+
+        // Initialize correlation chart
+        function initCorrelationChart() {
+            const ctx = document.getElementById('correlationChart').getContext('2d');
+            
+            // Sample data - would be populated from server
+            const correlationData = [
+                { activity: 'Walking', correlation: 0.8 },
+                { activity: 'Reading', correlation: 0.6 },
+                { activity: 'Socializing', correlation: 0.7 },
+                { activity: 'Exercise', correlation: 0.9 },
+                { activity: 'Cooking', correlation: 0.4 },
+                { activity: 'Gaming', correlation: -0.2 }
+            ];
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: correlationData.map(d => d.activity),
+                    datasets: [{
+                        label: 'Mood Correlation',
+                        data: correlationData.map(d => d.correlation),
+                        backgroundColor: correlationData.map(d => 
+                            d.correlation > 0.5 ? '#4CAF50' : 
+                            d.correlation > 0 ? '#FF9800' : '#F44336'
+                        ),
+                        borderColor: correlationData.map(d => 
+                            d.correlation > 0.5 ? '#4CAF50' : 
+                            d.correlation > 0 ? '#FF9800' : '#F44336'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            min: -1
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize filters
+        document.querySelectorAll('.filter-select, #searchBox').forEach(element => {
+            element.addEventListener('change', filterActivities);
+            element.addEventListener('input', filterActivities);
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initCorrelationChart();
+        });
+    </script>
+</body>
+</html>

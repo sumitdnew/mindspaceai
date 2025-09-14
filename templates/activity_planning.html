@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Planning - MindSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --accent-color: #FF9800;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 30px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+        }
+
+        .planning-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .activity-library {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .weekly-calendar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-section {
+            margin-bottom: 25px;
+        }
+
+        .category-header {
+            background: var(--light-bg);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: var(--dark-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .activity-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .add-to-day-buttons {
+            border-top: 1px solid #e9ecef;
+            padding-top: 10px;
+        }
+
+        .add-to-day-buttons .btn {
+            font-size: 0.7em;
+            padding: 4px 6px;
+            margin: 1px;
+        }
+
+        .add-to-day-buttons .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .day-activities {
+            min-height: 100px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .day-activities.drag-over {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            transform: scale(1.02);
+        }
+
+        .activity-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--dark-bg);
+        }
+
+        .activity-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .activity-metrics {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8em;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .energy-indicator {
+            width: 60px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--warning-color), var(--danger-color));
+            transition: width 0.3s ease;
+        }
+
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .day-column {
+            background: var(--light-bg);
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 300px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .day-column.has-activities {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--dark-bg);
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .scheduled-activity {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            position: relative;
+        }
+
+        .scheduled-activity:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .remove-activity {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prediction-sliders {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .slider-group {
+            margin-bottom: 8px;
+        }
+
+        .slider-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            font-size: 0.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .energy-balance-indicator {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-chart {
+            display: flex;
+            align-items: end;
+            gap: 5px;
+            height: 100px;
+            margin: 15px 0;
+        }
+
+        .day-energy {
+            flex: 1;
+            background: var(--light-bg);
+            border-radius: 5px 5px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .day-energy.overloaded {
+            background: var(--danger-color);
+        }
+
+        .day-energy.balanced {
+            background: var(--success-color);
+        }
+
+        .day-energy.underloaded {
+            background: var(--warning-color);
+        }
+
+        .energy-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .social-balance {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-meter {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--light-bg);
+            border-radius: 8px;
+        }
+
+        .balance-label {
+            font-weight: bold;
+            color: var(--dark-bg);
+        }
+
+        .balance-value {
+            background: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .btn-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .drag-over {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border-color: var(--primary-color);
+        }
+
+        .ai-suggestion {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .ai-suggestion h6 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .filter-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            color: var(--dark-bg);
+            min-width: 100px;
+        }
+
+        .filter-select {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px 12px;
+            background: white;
+            color: var(--dark-bg);
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                🧠 MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link active" href="{{ url_for('behavioral_activation_dashboard') }}">🚀 Activities</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <h1><i class="fas fa-calendar-plus"></i> Weekly Activity Planning</h1>
+            <p class="mb-0">Drag activities to plan your week and set enjoyment predictions</p>
+        </div>
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('patient_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('behavioral_activation_dashboard') }}">Activities</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Plan Activities</li>
+            </ol>
+        </nav>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h5><i class="fas fa-filter"></i> Activity Filters</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Category:</label>
+                        <select class="filter-select" id="categoryFilter">
+                            <option value="">All Categories</option>
+                            {% for category in data.activities|groupby('category.name') %}
+                            <option value="{{ category.grouper }}">{{ category.grouper }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Energy Level:</label>
+                        <select class="filter-select" id="energyFilter">
+                            <option value="">Any Energy</option>
+                            <option value="1-3">Low (1-3)</option>
+                            <option value="4-6">Medium (4-6)</option>
+                            <option value="7-10">High (7-10)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Duration:</label>
+                        <select class="filter-select" id="durationFilter">
+                            <option value="">Any Duration</option>
+                            <option value="0-30">Short (0-30 min)</option>
+                            <option value="31-60">Medium (31-60 min)</option>
+                            <option value="61+">Long (60+ min)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label class="filter-label">Social Level:</label>
+                        <select class="filter-select" id="socialFilter">
+                            <option value="">Any Social Level</option>
+                            <option value="0-0.3">Solo</option>
+                            <option value="0.4-0.7">Mixed</option>
+                            <option value="0.8-1">Social</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planning Grid -->
+        <div class="planning-grid">
+            <!-- Activity Library -->
+            <div class="activity-library">
+                <h4><i class="fas fa-book"></i> Activity Library</h4>
+                <p class="text-muted">Drag activities to your weekly calendar</p>
+                
+                {% for category in data.activities|groupby('category.name') %}
+                <div class="category-section" data-category="{{ category.grouper }}">
+                    <div class="category-header">
+                        <span>{{ category.grouper }}</span>
+                        <span class="badge bg-primary">{{ category.list|length }}</span>
+                    </div>
+                    
+                                         {% for activity in category.list %}
+                     <div class="activity-card" 
+                          data-activity-id="{{ activity.id }}"
+                          data-energy="{{ activity.energy_cost }}"
+                          data-duration="{{ activity.estimated_duration }}"
+                          data-social="{{ activity.social_level }}"
+                          data-category="{{ activity.category.name }}">
+                         <div class="activity-name">{{ activity.name }}</div>
+                         <div class="activity-details">{{ activity.description[:100] }}{% if activity.description|length > 100 %}...{% endif %}</div>
+                         <div class="activity-metrics">
+                             <div class="metric">
+                                 <i class="fas fa-clock"></i>
+                                 <span>{{ activity.estimated_duration }} min</span>
+                             </div>
+                             <div class="metric">
+                                 <i class="fas fa-battery-half"></i>
+                                 <div class="energy-indicator">
+                                     <div class="energy-fill" style="width: {{ activity.energy_cost * 10 }}%"></div>
+                                 </div>
+                             </div>
+                             <div class="metric">
+                                 <i class="fas fa-users"></i>
+                                 <span>{{ (activity.social_level * 100)|round|int }}%</span>
+                             </div>
+                         </div>
+                         
+                         <!-- Add to Day Buttons -->
+                         <div class="add-to-day-buttons mt-3">
+                             <div class="row">
+                                 {% for i in range(7) %}
+                                 {% set current_date = data.week_start + timedelta(days=i) %}
+                                 <div class="col">
+                                     <button class="btn btn-sm btn-outline-primary w-100" 
+                                             onclick="addActivityToDay({{ activity.id }}, {{ i }}, '{{ activity.name }}', {{ activity.estimated_duration }}, {{ activity.energy_cost }}, {{ activity.social_level }})">
+                                         {{ current_date.strftime('%a') }}
+                                     </button>
+                                 </div>
+                                 {% endfor %}
+                             </div>
+                         </div>
+                     </div>
+                     {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Weekly Calendar -->
+            <div class="weekly-calendar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4><i class="fas fa-calendar-week"></i> Weekly Schedule</h4>
+                    <div>
+                        <button class="btn btn-custom" onclick="savePlan()">
+                            <i class="fas fa-save"></i> Save Plan
+                        </button>
+                        <a href="{{ url_for('behavioral_activation_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </div>
+
+                <div class="week-grid" id="weekGrid">
+                    {% for i in range(7) %}
+                    {% set current_date = data.week_start + timedelta(days=i) %}
+                    <div class="day-column" data-date="{{ current_date.strftime('%Y-%m-%d') }}">
+                        <div class="day-header">
+                            {{ current_date.strftime('%a') }}<br>
+                            <small>{{ current_date.strftime('%b %d') }}</small>
+                        </div>
+                        <div class="day-activities" id="day-{{ i }}">
+                            {% if data.existing_plan %}
+                                {% for activity in data.existing_plan.scheduled_activities %}
+                                    {% if activity.scheduled_date == current_date %}
+                                    <div class="scheduled-activity" data-activity-id="{{ activity.activity.id }}">
+                                        <button class="remove-activity" onclick="removeActivity(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <div class="activity-name">{{ activity.activity.name }}</div>
+                                        <div class="activity-details">{{ activity.duration_planned }} min</div>
+                                        
+                                        <div class="prediction-sliders">
+                                            <div class="slider-group">
+                                                <div class="slider-label">Predicted Enjoyment</div>
+                                                <div class="slider-container">
+                                                    <input type="range" class="slider" min="1" max="10" 
+                                                           value="{{ activity.predicted_enjoyment or 5 }}" 
+                                                           oninput="updateSliderValue(this, 'enjoyment')">
+                                                    <span class="slider-value">{{ activity.predicted_enjoyment or 5 }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="slider-group">
+                                                <div class="slider-label">Energy Cost</div>
+                                                <div class="slider-container">
+                                                    <input type="range" class="slider" min="1" max="10" 
+                                                           value="{{ activity.predicted_energy_cost or activity.activity.energy_cost }}" 
+                                                           oninput="updateSliderValue(this, 'energy')">
+                                                    <span class="slider-value">{{ activity.predicted_energy_cost or activity.activity.energy_cost }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="slider-group">
+                                                <div class="slider-label">Mood Boost</div>
+                                                <div class="slider-container">
+                                                    <input type="range" class="slider" min="1" max="10" 
+                                                           value="{{ activity.predicted_mood_boost or 5 }}" 
+                                                           oninput="updateSliderValue(this, 'mood')">
+                                                    <span class="slider-value">{{ activity.predicted_mood_boost or 5 }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Energy Balance & Social Connection -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="energy-balance-indicator">
+                    <h5><i class="fas fa-battery-half"></i> Weekly Energy Balance</h5>
+                    <div class="balance-chart" id="energyChart">
+                        {% for i in range(7) %}
+                        <div class="day-energy" style="height: 20px;">
+                            <div class="energy-label">{{ (data.week_start + timedelta(days=i)).strftime('%a') }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted">Monitor your daily energy distribution to avoid overload</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="social-balance">
+                    <h5><i class="fas fa-users"></i> Social Activity Balance</h5>
+                    <div class="balance-meter">
+                        <span class="balance-label">Solo Activities</span>
+                        <span class="balance-value" id="soloCount">0</span>
+                    </div>
+                    <div class="balance-meter">
+                        <span class="balance-label">Social Activities</span>
+                        <span class="balance-value" id="socialCount">0</span>
+                    </div>
+                    <div class="balance-meter">
+                        <span class="balance-label">Balance Score</span>
+                        <span class="balance-value" id="balanceScore">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        <div class="ai-suggestion">
+            <h6><i class="fas fa-robot"></i> AI Suggestions</h6>
+            <p>Based on your current plan, here are some recommendations:</p>
+            <div id="aiSuggestions">
+                <ul>
+                    <li>Consider adding more social activities to improve connection</li>
+                    <li>Your energy distribution looks balanced for the week</li>
+                    <li>Try to include at least one creative activity</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add activity to specific day
+        function addActivityToDay(activityId, dayIndex, activityName, duration, energy, social) {
+            try {
+                console.log('Adding activity to day:', activityId, dayIndex, activityName);
+                
+                const dayContainer = document.getElementById(`day-${dayIndex}`);
+                if (!dayContainer) {
+                    console.error('Day container not found:', dayIndex);
+                    return;
+                }
+                
+                // Create scheduled activity element
+                const scheduledActivity = document.createElement('div');
+                scheduledActivity.className = 'scheduled-activity';
+                scheduledActivity.dataset.activityId = activityId;
+                
+                scheduledActivity.innerHTML = `
+                    <button class="remove-activity" onclick="removeActivity(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="activity-name">${activityName}</div>
+                    <div class="activity-details">${duration} min</div>
+                    
+                    <div class="prediction-sliders">
+                        <div class="slider-group">
+                            <div class="slider-label">Predicted Enjoyment</div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue(this, 'enjoyment')">
+                                <span class="slider-value">5</span>
+                            </div>
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label">Energy Cost</div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" min="1" max="10" value="${energy}" oninput="updateSliderValue(this, 'energy')">
+                                <span class="slider-value">${energy}</span>
+                            </div>
+                        </div>
+                        <div class="slider-group">
+                            <div class="slider-label">Mood Boost</div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue(this, 'mood')">
+                                <span class="slider-value">5</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add to day container
+                dayContainer.appendChild(scheduledActivity);
+                
+                // Update metrics
+                updateMetrics();
+                
+                // Show success message
+                showNotification(`Added ${activityName} to ${getDayName(dayIndex)}`, 'success');
+                
+                console.log('Activity successfully added to schedule');
+            } catch (error) {
+                console.error('Error adding activity to day:', error);
+                showNotification('Error adding activity. Please try again.', 'error');
+            }
+        }
+        
+        // Get day name from index
+        function getDayName(dayIndex) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[dayIndex];
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        // Filter activities
+        function filterActivities() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const energyFilter = document.getElementById('energyFilter').value;
+            const durationFilter = document.getElementById('durationFilter').value;
+            const socialFilter = document.getElementById('socialFilter').value;
+            
+            document.querySelectorAll('.activity-card').forEach(card => {
+                let show = true;
+                
+                if (categoryFilter && card.dataset.category !== categoryFilter) show = false;
+                if (energyFilter) {
+                    const energy = parseInt(card.dataset.energy);
+                    const [min, max] = energyFilter.split('-').map(Number);
+                    if (energy < min || energy > max) show = false;
+                }
+                if (durationFilter) {
+                    const duration = parseInt(card.dataset.duration);
+                    const [min, max] = durationFilter.split('-').map(Number);
+                    if (duration < min || (max && duration > max)) show = false;
+                }
+                if (socialFilter) {
+                    const social = parseFloat(card.dataset.social);
+                    const [min, max] = socialFilter.split('-').map(Number);
+                    if (social < min || social > max) show = false;
+                }
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+
+
+
+        // Update slider value display
+        function updateSliderValue(slider, type) {
+            const value = slider.value;
+            slider.nextElementSibling.textContent = value;
+            updateMetrics();
+        }
+
+        // Remove activity
+        function removeActivity(button) {
+            button.closest('.scheduled-activity').remove();
+            updateMetrics();
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const activities = document.querySelectorAll('.scheduled-activity');
+            let soloCount = 0;
+            let socialCount = 0;
+            const dailyEnergy = [0, 0, 0, 0, 0, 0, 0];
+            
+            activities.forEach(activity => {
+                const dayIndex = getDayIndex(activity);
+                const energySlider = activity.querySelector('input[type="range"]:nth-of-type(2)');
+                const energy = energySlider ? parseInt(energySlider.value) : 5;
+                
+                dailyEnergy[dayIndex] += energy;
+                
+                // Count social vs solo (simplified logic)
+                if (Math.random() > 0.5) socialCount++;
+                else soloCount++;
+            });
+            
+            // Update social balance
+            document.getElementById('soloCount').textContent = soloCount;
+            document.getElementById('socialCount').textContent = socialCount;
+            const balanceScore = Math.abs(soloCount - socialCount) <= 1 ? 100 : Math.max(0, 100 - Math.abs(soloCount - socialCount) * 20);
+            document.getElementById('balanceScore').textContent = balanceScore + '%';
+            
+            // Update energy chart
+            updateEnergyChart(dailyEnergy);
+        }
+
+        // Get day index from activity
+        function getDayIndex(activity) {
+            const dayColumn = activity.closest('.day-column');
+            const dayActivities = dayColumn.querySelector('.day-activities');
+            return Array.from(document.querySelectorAll('.day-activities')).indexOf(dayActivities);
+        }
+
+        // Update energy chart
+        function updateEnergyChart(dailyEnergy) {
+            const chart = document.getElementById('energyChart');
+            const bars = chart.querySelectorAll('.day-energy');
+            
+            bars.forEach((bar, index) => {
+                const energy = dailyEnergy[index];
+                const height = Math.min(100, energy * 10);
+                bar.style.height = height + 'px';
+                
+                // Update color based on energy level
+                bar.className = 'day-energy';
+                if (energy > 8) bar.classList.add('overloaded');
+                else if (energy > 4) bar.classList.add('balanced');
+                else bar.classList.add('underloaded');
+            });
+        }
+
+        // Save plan
+        function savePlan() {
+            console.log('Saving plan...');
+            
+            const activities = [];
+            const scheduledActivities = document.querySelectorAll('.scheduled-activity');
+            
+            console.log('Found', scheduledActivities.length, 'scheduled activities');
+            
+            if (scheduledActivities.length === 0) {
+                alert('No activities scheduled. Please add some activities to your plan before saving.');
+                return;
+            }
+            
+            scheduledActivities.forEach((activity, index) => {
+                try {
+                    const dayColumn = activity.closest('.day-column');
+                    const date = dayColumn.dataset.date;
+                    const activityId = activity.dataset.activityId;
+                    
+                    // Get duration from activity details
+                    const durationText = activity.querySelector('.activity-details').textContent;
+                    const duration = parseInt(durationText.match(/\d+/)[0]);
+                    
+                    // Get slider values
+                    const sliders = activity.querySelectorAll('input[type="range"]');
+                    const enjoyment = parseInt(sliders[0].value);
+                    const energy = parseInt(sliders[1].value);
+                    const mood = parseInt(sliders[2].value);
+                    
+                    console.log('Activity', index + 1, ':', {
+                        activity_id: activityId,
+                        date: date,
+                        duration: duration,
+                        enjoyment: enjoyment,
+                        energy: energy,
+                        mood: mood
+                    });
+                    
+                    activities.push({
+                        activity_id: activityId,
+                        date: date,
+                        time: '09:00', // Default time
+                        duration: duration,
+                        predicted_enjoyment: enjoyment,
+                        predicted_energy_cost: energy,
+                        predicted_mood_boost: mood,
+                        ai_recommended: false,
+                        user_customized: true
+                    });
+                } catch (error) {
+                    console.error('Error processing activity', index, ':', error);
+                }
+            });
+            
+            if (activities.length === 0) {
+                alert('No valid activities found. Please check your plan and try again.');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('week_start', '{{ data.week_start.strftime("%Y-%m-%d") }}');
+            formData.append('week_end', '{{ data.week_end.strftime("%Y-%m-%d") }}');
+            
+            activities.forEach((activity, index) => {
+                formData.append('activities[]', JSON.stringify(activity));
+                console.log('Added activity', index + 1, 'to form data');
+            });
+            
+            console.log('Submitting form with', activities.length, 'activities');
+            
+            // Show loading state
+            const saveButton = document.querySelector('button[onclick="savePlan()"]');
+            const originalText = saveButton.innerHTML;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            saveButton.disabled = true;
+            
+            // Submit form
+            fetch('{{ url_for("activity_planning") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log('Plan saved successfully!');
+                alert('Activity plan saved successfully!');
+                window.location.href = '{{ url_for("behavioral_activation_dashboard") }}';
+            })
+            .catch(error => {
+                console.error('Error saving plan:', error);
+                alert('Error saving plan: ' + error.message + '\nPlease try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                saveButton.innerHTML = originalText;
+                saveButton.disabled = false;
+            });
+        }
+
+        // Initialize filters
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.addEventListener('change', filterActivities);
+        });
+
+        // Initialize page on load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMetrics();
+            console.log('Activity planning page loaded successfully');
+        });
+    </script>
+</body>
+</html>

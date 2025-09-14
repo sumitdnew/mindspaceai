@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence Analysis - Thought Detective</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .detective-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .evidence-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .evidence-column {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .evidence-column.supporting {
+            border: 3px solid #dc3545;
+        }
+
+        .evidence-column.contradicting {
+            border: 3px solid #28a745;
+        }
+
+        .evidence-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .evidence-header.supporting {
+            background: #dc3545;
+        }
+
+        .evidence-header.contradicting {
+            background: #28a745;
+        }
+
+        .evidence-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: move;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .evidence-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .evidence-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .evidence-text {
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .strength-meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .strength-slider {
+            flex: 1;
+        }
+
+        .strength-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            min-width: 60px;
+        }
+
+        .evidence-category {
+            background: #e9ecef;
+            color: #495057;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .add-evidence-form {
+            background: white;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .add-evidence-form:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .evidence-input {
+            width: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .evidence-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .category-select {
+            width: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        .btn-evidence {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-evidence:hover {
+            transform: translateY(-1px);
+            color: white;
+        }
+
+        .btn-outline-evidence {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-evidence:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .thought-summary {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .thought-text {
+            font-style: italic;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .evidence-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .drag-instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .drag-instructions i {
+            color: #856404;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">🧠 MindSpace ML</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link active" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-search"></i> Evidence Analysis</h1>
+            <p>Examine the evidence for and against your thought</p>
+        </div>
+
+        <!-- Thought Summary -->
+        <div class="detective-card">
+            <div class="thought-summary">
+                <h4><i class="fas fa-brain"></i> Your Thought</h4>
+                <div class="thought-text">"{{ record.initial_thought }}"</div>
+                <div class="mt-2">
+                    <small class="text-muted">Confidence: {{ record.thought_confidence }}/10 | Emotion: {{ record.primary_emotion }} ({{ record.emotion_intensity }}/10)</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drag Instructions -->
+        <div class="drag-instructions">
+            <i class="fas fa-info-circle"></i>
+            <strong>Drag and drop evidence items between columns to organize them by strength and relevance.</strong>
+        </div>
+
+        <!-- Evidence Analysis -->
+        <div class="detective-card">
+            <h3><i class="fas fa-balance-scale"></i> Evidence Analysis</h3>
+            <p class="text-muted">Drag evidence items to organize them by strength. Add new evidence as needed.</p>
+
+            <div class="evidence-container">
+                <!-- Supporting Evidence Column -->
+                <div class="evidence-column supporting" id="supporting-column">
+                    <div class="evidence-header supporting">
+                        <i class="fas fa-thumbs-up"></i> Evidence Supporting Your Thought
+                    </div>
+                    <div class="evidence-items" id="supporting-items">
+                        <!-- Evidence items will be added here -->
+                    </div>
+                    <div class="add-evidence-form">
+                        <h5><i class="fas fa-plus"></i> Add Supporting Evidence</h5>
+                        <input type="text" class="evidence-input" id="supporting-evidence-input" placeholder="Enter supporting evidence...">
+                        <select class="category-select" id="supporting-category">
+                            <option value="facts">Facts</option>
+                            <option value="past_experience">Past Experience</option>
+                            <option value="others_opinions">Others' Opinions</option>
+                            <option value="observations">Observations</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button type="button" class="btn-evidence" onclick="addEvidence('supporting')">Add Evidence</button>
+                    </div>
+                </div>
+
+                <!-- Contradicting Evidence Column -->
+                <div class="evidence-column contradicting" id="contradicting-column">
+                    <div class="evidence-header contradicting">
+                        <i class="fas fa-thumbs-down"></i> Evidence Against Your Thought
+                    </div>
+                    <div class="evidence-items" id="contradicting-items">
+                        <!-- Evidence items will be added here -->
+                    </div>
+                    <div class="add-evidence-form">
+                        <h5><i class="fas fa-plus"></i> Add Contradicting Evidence</h5>
+                        <input type="text" class="evidence-input" id="contradicting-evidence-input" placeholder="Enter contradicting evidence...">
+                        <select class="category-select" id="contradicting-category">
+                            <option value="facts">Facts</option>
+                            <option value="past_experience">Past Experience</option>
+                            <option value="others_opinions">Others' Opinions</option>
+                            <option value="observations">Observations</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button type="button" class="btn-evidence" onclick="addEvidence('contradicting')">Add Evidence</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evidence Statistics -->
+            <div class="evidence-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="supporting-count">0</div>
+                    <div class="stat-label">Supporting Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="contradicting-count">0</div>
+                    <div class="stat-label">Contradicting Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="avg-supporting-strength">0</div>
+                    <div class="stat-label">Avg Supporting Strength</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="avg-contradicting-strength">0</div>
+                    <div class="stat-label">Avg Contradicting Strength</div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="text-end mt-4">
+                <a href="{{ url_for('thought_record_dashboard') }}" class="btn-outline-evidence me-2">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <button type="button" class="btn-evidence" onclick="saveEvidence()">
+                    Continue to Balanced Thought <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let evidenceItems = {
+            supporting: [],
+            contradicting: []
+        };
+
+        // Initialize with sample evidence if none exists
+        function initializeEvidence() {
+            if (evidenceItems.supporting.length === 0) {
+                addSampleEvidence();
+            }
+            updateEvidenceDisplay();
+            updateStats();
+        }
+
+        function addSampleEvidence() {
+            // Add some sample evidence to get started
+            evidenceItems.supporting.push({
+                id: 's1',
+                text: 'I stumbled over my words during the presentation',
+                category: 'observations',
+                strength: 3
+            });
+            
+            evidenceItems.contradicting.push({
+                id: 'c1',
+                text: 'I have given successful presentations before',
+                category: 'past_experience',
+                strength: 4
+            });
+        }
+
+        function addEvidence(type) {
+            const input = document.getElementById(`${type}-evidence-input`);
+            const category = document.getElementById(`${type}-category`);
+            
+            if (!input.value.trim()) {
+                alert('Please enter evidence text');
+                return;
+            }
+
+            const evidence = {
+                id: `${type}_${Date.now()}`,
+                text: input.value.trim(),
+                category: category.value,
+                strength: 3
+            };
+
+            evidenceItems[type].push(evidence);
+            
+            input.value = '';
+            updateEvidenceDisplay();
+            updateStats();
+        }
+
+        function updateEvidenceDisplay() {
+            // Update supporting evidence
+            const supportingContainer = document.getElementById('supporting-items');
+            supportingContainer.innerHTML = '';
+            
+            evidenceItems.supporting.forEach(item => {
+                supportingContainer.appendChild(createEvidenceElement(item, 'supporting'));
+            });
+
+            // Update contradicting evidence
+            const contradictingContainer = document.getElementById('contradicting-items');
+            contradictingContainer.innerHTML = '';
+            
+            evidenceItems.contradicting.forEach(item => {
+                contradictingContainer.appendChild(createEvidenceElement(item, 'contradicting'));
+            });
+        }
+
+        function createEvidenceElement(item, type) {
+            const div = document.createElement('div');
+            div.className = 'evidence-item';
+            div.draggable = true;
+            div.dataset.id = item.id;
+            div.dataset.type = type;
+            
+            div.innerHTML = `
+                <div class="evidence-text">${item.text}</div>
+                <div class="evidence-category">${item.category.replace('_', ' ')}</div>
+                <div class="strength-meter">
+                    <span class="strength-label">Strength:</span>
+                    <input type="range" class="strength-slider" min="1" max="5" value="${item.strength}" 
+                           onchange="updateStrength('${item.id}', this.value)">
+                    <span class="badge bg-primary">${item.strength}/5</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-2" 
+                        onclick="removeEvidence('${item.id}')">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            `;
+
+            // Add drag event listeners
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragover', handleDragOver);
+            div.addEventListener('drop', handleDrop);
+            div.addEventListener('dragend', handleDragEnd);
+
+            return div;
+        }
+
+        function updateStrength(id, strength) {
+            // Find and update the evidence item
+            for (let type in evidenceItems) {
+                const item = evidenceItems[type].find(item => item.id === id);
+                if (item) {
+                    item.strength = parseInt(strength);
+                    break;
+                }
+            }
+            updateStats();
+        }
+
+        function removeEvidence(id) {
+            // Remove from both arrays
+            for (let type in evidenceItems) {
+                evidenceItems[type] = evidenceItems[type].filter(item => item.id !== id);
+            }
+            updateEvidenceDisplay();
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('supporting-count').textContent = evidenceItems.supporting.length;
+            document.getElementById('contradicting-count').textContent = evidenceItems.contradicting.length;
+            
+            const avgSupporting = evidenceItems.supporting.length > 0 
+                ? (evidenceItems.supporting.reduce((sum, item) => sum + item.strength, 0) / evidenceItems.supporting.length).toFixed(1)
+                : '0';
+            document.getElementById('avg-supporting-strength').textContent = avgSupporting;
+            
+            const avgContradicting = evidenceItems.contradicting.length > 0
+                ? (evidenceItems.contradicting.reduce((sum, item) => sum + item.strength, 0) / evidenceItems.contradicting.length).toFixed(1)
+                : '0';
+            document.getElementById('avg-contradicting-strength').textContent = avgContradicting;
+        }
+
+        // Drag and Drop functionality
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (draggedElement) {
+                const targetColumn = this.closest('.evidence-column');
+                const targetType = targetColumn.id.includes('supporting') ? 'supporting' : 'contradicting';
+                const sourceType = draggedElement.dataset.type;
+                
+                if (targetType !== sourceType) {
+                    // Move evidence to different column
+                    const evidenceId = draggedElement.dataset.id;
+                    const evidence = evidenceItems[sourceType].find(item => item.id === evidenceId);
+                    
+                    if (evidence) {
+                        evidenceItems[sourceType] = evidenceItems[sourceType].filter(item => item.id !== evidenceId);
+                        evidenceItems[targetType].push(evidence);
+                        updateEvidenceDisplay();
+                        updateStats();
+                    }
+                }
+            }
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        function saveEvidence() {
+            // Prepare evidence data for form submission
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = window.location.href;
+
+            // Add supporting evidence
+            evidenceItems.supporting.forEach(item => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'supporting_evidence[]';
+                input.value = JSON.stringify(item);
+                form.appendChild(input);
+            });
+
+            // Add contradicting evidence
+            evidenceItems.contradicting.forEach(item => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'contradicting_evidence[]';
+                input.value = JSON.stringify(item);
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeEvidence);
+    </script>
+</body>
+</html>

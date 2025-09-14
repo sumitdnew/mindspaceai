@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Analytics - MindSpace ML</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #667eea;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .analytics-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+
+        .analytics-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .card-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+            color: #007bff;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .insights-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .insights-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .alerts-panel {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .alert-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .alert-severity-high {
+            border-left-color: #dc3545;
+        }
+
+        .alert-severity-moderate {
+            border-left-color: #ffc107;
+        }
+
+        .alert-severity-low {
+            border-left-color: #28a745;
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .pattern-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .pattern-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .pattern-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .engagement-score {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+
+        .score-excellent { background: #28a745; }
+        .score-good { background: #17a2b8; }
+        .score-moderate { background: #ffc107; }
+        .score-needs-improvement { background: #dc3545; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metric-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <div class="navigation">
+            <div class="nav-links">
+                <a href="{{ url_for('patient_dashboard') }}" class="nav-link">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="{{ url_for('mood_tracking.mood_tracker') }}" class="nav-link">
+                    <i class="fas fa-smile"></i> Mood Tracker
+                </a>
+                <a href="{{ url_for('mood_analytics.mood_analytics_dashboard') }}" class="nav-link active">
+                    <i class="fas fa-chart-line"></i> Analytics
+                </a>
+                <a href="{{ url_for('phq9_assessment') }}" class="nav-link">
+                    <i class="fas fa-clipboard-list"></i> PHQ-9
+                </a>
+            </div>
+            <a href="{{ url_for('patient_dashboard') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Mood Analytics</h1>
+            <p>Discover patterns and insights in your mood tracking data</p>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading your mood analytics...</p>
+        </div>
+
+        <!-- Analytics Content -->
+        <div id="analyticsContent" style="display: none;">
+            <!-- Engagement Overview -->
+            <div class="analytics-card">
+                <div class="card-header">
+                    <i class="fas fa-trophy card-icon"></i>
+                    <h3>Engagement Overview</h3>
+                </div>
+                <div class="engagement-score">
+                    <div class="score-circle" id="engagementScore">
+                        <span id="scoreValue">0</span>
+                    </div>
+                    <div id="scoreLabel">Engagement Score</div>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="totalEntries">0</div>
+                        <div class="metric-label">Total Entries</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="completionRate">0%</div>
+                        <div class="metric-label">Completion Rate</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="currentStreak">0</div>
+                        <div class="metric-label">Current Streak</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="achievements">0</div>
+                        <div class="metric-label">Achievements</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mood Trends Chart -->
+            <div class="analytics-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-area card-icon"></i>
+                    <h3>Mood Trends (Last 30 Days)</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="moodTrendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Pattern Analysis -->
+            <div class="analytics-card">
+                <div class="card-header">
+                    <i class="fas fa-search card-icon"></i>
+                    <h3>Pattern Analysis</h3>
+                </div>
+                <div class="pattern-grid" id="patternGrid">
+                    <!-- Patterns will be populated here -->
+                </div>
+            </div>
+
+            <!-- Day of Week Patterns -->
+            <div class="analytics-card">
+                <div class="card-header">
+                    <i class="fas fa-calendar-week card-icon"></i>
+                    <h3>Day of Week Patterns</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dayPatternsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sleep & Energy Correlations -->
+            <div class="analytics-card">
+                <div class="card-header">
+                    <i class="fas fa-bed card-icon"></i>
+                    <h3>Sleep & Energy Correlations</h3>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="sleepCorrelation">-</div>
+                        <div class="metric-label">Sleep Correlation</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="energyCorrelation">-</div>
+                        <div class="metric-label">Energy Correlation</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="moodStability">-</div>
+                        <div class="metric-label">Mood Stability</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Panel -->
+            <div class="insights-panel" id="insightsPanel">
+                <div class="insights-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Personalized Insights
+                </div>
+                <div id="insightsContent">
+                    <!-- Insights will be populated here -->
+                </div>
+            </div>
+
+            <!-- Alerts Panel -->
+            <div class="alerts-panel" id="alertsPanel" style="display: none;">
+                <div class="insights-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Provider Alerts
+                </div>
+                <div id="alertsContent">
+                    <!-- Alerts will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let analyticsData = null;
+        let moodTrendsChart = null;
+        let dayPatternsChart = null;
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAnalyticsData();
+        });
+
+        async function loadAnalyticsData() {
+            try {
+                const response = await fetch(`/api/mood-analytics/{{ patient.id }}`);
+                analyticsData = await response.json();
+                
+                if (analyticsData) {
+                    displayAnalytics(analyticsData);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('loading').innerHTML = '<p>Error loading analytics data. Please try again.</p>';
+            }
+        }
+
+        function displayAnalytics(data) {
+            // Hide loading, show content
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('analyticsContent').style.display = 'block';
+
+            // Update engagement metrics
+            updateEngagementMetrics(data.engagement);
+            
+            // Create charts
+            createMoodTrendsChart(data.trends);
+            createDayPatternsChart(data.patterns.day_of_week);
+            
+            // Update pattern analysis
+            updatePatternAnalysis(data.patterns);
+            
+            // Update insights
+            updateInsights(data.insights);
+            
+            // Update alerts
+            updateAlerts(data.alerts);
+        }
+
+        function updateEngagementMetrics(engagement) {
+            document.getElementById('totalEntries').textContent = engagement.total_entries;
+            document.getElementById('completionRate').textContent = engagement.completion_rate + '%';
+            document.getElementById('currentStreak').textContent = engagement.current_streak;
+            document.getElementById('achievements').textContent = engagement.achievements;
+            
+            // Update engagement score
+            const scoreElement = document.getElementById('scoreValue');
+            const scoreCircle = document.getElementById('engagementScore');
+            
+            scoreElement.textContent = engagement.engagement_score;
+            
+            // Update score circle class
+            scoreCircle.className = 'score-circle score-' + engagement.engagement_level;
+        }
+
+        function createMoodTrendsChart(trends) {
+            const ctx = document.getElementById('moodTrendsChart').getContext('2d');
+            
+            if (moodTrendsChart) {
+                moodTrendsChart.destroy();
+            }
+            
+            moodTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trends.dates,
+                    datasets: [
+                        {
+                            label: 'Mood Intensity',
+                            data: trends.intensity,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Energy Level',
+                            data: trends.energy,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Sleep Quality',
+                            data: trends.sleep,
+                            borderColor: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Mood Intensity (1-10)'
+                            },
+                            min: 1,
+                            max: 10
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Energy/Sleep (0-100/1-5)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDayPatternsChart(dayPatterns) {
+            const ctx = document.getElementById('dayPatternsChart').getContext('2d');
+            
+            if (dayPatternsChart) {
+                dayPatternsChart.destroy();
+            }
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const data = days.map(day => dayPatterns[day] ? dayPatterns[day].avg_intensity : 0);
+            
+            dayPatternsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Average Mood Intensity',
+                        data: data,
+                        backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                        borderColor: '#007bff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: {
+                                display: true,
+                                text: 'Average Mood Intensity'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePatternAnalysis(patterns) {
+            const patternGrid = document.getElementById('patternGrid');
+            patternGrid.innerHTML = '';
+            
+            // Add pattern items
+            if (patterns.sleep_correlation && patterns.sleep_correlation.sample_size >= 5 && patterns.sleep_correlation.correlation !== undefined) {
+                addPatternItem('Sleep Correlation', 
+                    patterns.sleep_correlation.correlation, 
+                    patterns.sleep_correlation.strength || 'N/A');
+            }
+            
+            if (patterns.energy_correlation && patterns.energy_correlation.sample_size >= 5 && patterns.energy_correlation.correlation !== undefined) {
+                addPatternItem('Energy Correlation', 
+                    patterns.energy_correlation.correlation, 
+                    patterns.energy_correlation.strength || 'N/A');
+            }
+            
+            if (patterns.mood_stability && patterns.mood_stability.stability_score !== undefined) {
+                addPatternItem('Mood Stability', 
+                    patterns.mood_stability.stability_score + '/10', 
+                    patterns.mood_stability.stability_level || 'N/A');
+            }
+            
+            // Update correlation displays
+            if (patterns.sleep_correlation && patterns.sleep_correlation.correlation !== undefined) {
+                document.getElementById('sleepCorrelation').textContent = 
+                    patterns.sleep_correlation.correlation;
+            } else {
+                document.getElementById('sleepCorrelation').textContent = 'N/A';
+            }
+            
+            if (patterns.energy_correlation && patterns.energy_correlation.correlation !== undefined) {
+                document.getElementById('energyCorrelation').textContent = 
+                    patterns.energy_correlation.correlation;
+            } else {
+                document.getElementById('energyCorrelation').textContent = 'N/A';
+            }
+            
+            if (patterns.mood_stability && patterns.mood_stability.stability_score !== undefined) {
+                document.getElementById('moodStability').textContent = 
+                    patterns.mood_stability.stability_score + '/10';
+            } else {
+                document.getElementById('moodStability').textContent = 'N/A';
+            }
+        }
+
+        function addPatternItem(label, value, description) {
+            const patternGrid = document.getElementById('patternGrid');
+            const patternItem = document.createElement('div');
+            patternItem.className = 'pattern-item';
+            patternItem.innerHTML = `
+                <div class="pattern-value">${value}</div>
+                <div class="pattern-label">${label}</div>
+                <div class="pattern-label">${description}</div>
+            `;
+            patternGrid.appendChild(patternItem);
+        }
+
+        function updateInsights(insights) {
+            const insightsContent = document.getElementById('insightsContent');
+            insightsContent.innerHTML = '';
+            
+            if (insights && insights.length > 0) {
+                insights.forEach(insight => {
+                    const insightItem = document.createElement('div');
+                    insightItem.className = 'insight-item';
+                    insightItem.textContent = insight;
+                    insightsContent.appendChild(insightItem);
+                });
+            } else {
+                insightsContent.innerHTML = '<div class="insight-item">Start tracking your mood to discover insights!</div>';
+            }
+        }
+
+        function updateAlerts(alerts) {
+            const alertsPanel = document.getElementById('alertsPanel');
+            const alertsContent = document.getElementById('alertsContent');
+            
+            if (alerts && alerts.length > 0) {
+                alertsContent.innerHTML = '';
+                alerts.forEach(alert => {
+                    const alertItem = document.createElement('div');
+                    alertItem.className = `alert-item alert-severity-${alert.severity}`;
+                    alertItem.innerHTML = `
+                        <h4>${alert.message}</h4>
+                        <p><strong>Recommendation:</strong> ${alert.recommendation}</p>
+                    `;
+                    alertsContent.appendChild(alertItem);
+                });
+                alertsPanel.style.display = 'block';
+            } else {
+                alertsPanel.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

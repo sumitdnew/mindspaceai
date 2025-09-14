@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHQ-9 Insights - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .insight-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .btn-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .severity-minimal { color: #28a745; }
+        .severity-mild { color: #ffc107; }
+        .severity-moderate { color: #fd7e14; }
+        .severity-moderately_severe { color: #dc3545; }
+        .severity-severe { color: #6f42c1; }
+        .trend-improving { color: #28a745; }
+        .trend-worsening { color: #dc3545; }
+        .trend-stable { color: #6c757d; }
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+        }
+        .nav-link {
+            color: #333 !important;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #667eea !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">
+                <i class="fas fa-brain"></i> MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                <a class="nav-link" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link active" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="insight-card">
+            <h3><i class="fas fa-chart-line"></i> PHQ-9 Mental Health Insights</h3>
+            <p class="lead">AI-powered analysis of your depression screening patterns and progress</p>
+            
+            {% if insights.total_assessments > 0 %}
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5><i class="fas fa-calculator"></i> Average PHQ-9 Score</h5>
+                                <div class="metric-value">{{ insights.avg_phq9_score }}/27</div>
+                                <small class="text-muted">All assessments</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5><i class="fas fa-clipboard-list"></i> Total Assessments</h5>
+                                <div class="metric-value">{{ insights.total_assessments }}</div>
+                                <small class="text-muted">PHQ-9 screenings</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5><i class="fas fa-exclamation-triangle"></i> Current Severity</h5>
+                                <div class="metric-value severity-{{ insights.current_severity }}">
+                                    {{ insights.current_severity.replace('_', ' ').title() }}
+                                </div>
+                                <small class="text-muted">Latest assessment</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5><i class="fas fa-chart-bar"></i> Trend</h5>
+                                <div class="metric-value trend-{{ insights.trend }}">
+                                    {% if insights.trend == 'improving' %}
+                                        <i class="fas fa-arrow-up"></i> Improving
+                                    {% elif insights.trend == 'worsening' %}
+                                        <i class="fas fa-arrow-down"></i> Worsening
+                                    {% elif insights.trend == 'stable' %}
+                                        <i class="fas fa-minus"></i> Stable
+                                    {% else %}
+                                        <i class="fas fa-question"></i> N/A
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Recent trend</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>No assessments yet!</strong> Complete your first PHQ-9 assessment to see insights.
+                    <br><br>
+                    <a href="{{ url_for('phq9_assessment') }}" class="btn btn-custom">
+                        <i class="fas fa-clipboard-list"></i> Take PHQ-9 Assessment
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if insights.total_assessments > 0 %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="insight-card">
+                        <h4><i class="fas fa-shield-alt"></i> Recent Risk Levels</h4>
+                        {% if insights.recent_risk_levels %}
+                            <div class="list-group">
+                                {% for level in insights.recent_risk_levels %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Assessment {{ loop.index }}</span>
+                                        <span class="badge bg-{{ 'danger' if level == 'HIGH' else 'warning' if level == 'MEDIUM' else 'success' }} rounded-pill">
+                                            {{ level }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No recent assessments to analyze.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="insight-card">
+                        <h4><i class="fas fa-brain"></i> Severity Distribution</h4>
+                        {% if insights.severity_distribution %}
+                            <div class="list-group">
+                                {% for severity, count in insights.severity_distribution.items() %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span class="severity-{{ severity }}">
+                                            {{ severity.replace('_', ' ').title() }}
+                                        </span>
+                                        <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No severity data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <h4><i class="fas fa-robot"></i> AI Analysis & Recommendations</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-search"></i> Pattern Recognition</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> PHQ-9 score trends</li>
+                                    <li><i class="fas fa-check text-success"></i> Severity level changes</li>
+                                    <li><i class="fas fa-check text-success"></i> Risk level monitoring</li>
+                                    <li><i class="fas fa-check text-success"></i> Assessment frequency</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-lightbulb"></i> Recommendations</h6>
+                                <ul class="list-unstyled">
+                                    {% if insights.avg_phq9_score >= 15 %}
+                                        <li><i class="fas fa-exclamation-triangle text-warning"></i> Consider professional help</li>
+                                    {% endif %}
+                                    {% if insights.trend == 'worsening' %}
+                                        <li><i class="fas fa-arrow-down text-danger"></i> Monitor symptoms closely</li>
+                                    {% endif %}
+                                    <li><i class="fas fa-calendar-check text-info"></i> Regular PHQ-9 assessments</li>
+                                    <li><i class="fas fa-heart text-success"></i> Practice self-care activities</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if insights.last_assessment_date %}
+                <div class="insight-card">
+                    <h4><i class="fas fa-clock"></i> Assessment History</h4>
+                    <p><strong>Last Assessment:</strong> {{ insights.last_assessment_date.strftime('%B %d, %Y') }}</p>
+                    <p><strong>Total Assessments:</strong> {{ insights.total_assessments }} over time</p>
+                    <a href="{{ url_for('phq9_assessment') }}" class="btn btn-custom">
+                        <i class="fas fa-plus"></i> Take New Assessment
+                    </a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

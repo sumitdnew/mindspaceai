@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .btn-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+        }
+        .severity-minimal { color: #28a745; }
+        .severity-mild { color: #ffc107; }
+        .severity-moderate { color: #fd7e14; }
+        .severity-moderately_severe { color: #dc3545; }
+        .severity-severe { color: #6f42c1; }
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        /* Meditation Timer Styles */
+        .meditation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .meditation-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            position: relative;
+        }
+        
+        .close-meditation {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-meditation:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .timer-options {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .timer-option-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .timer-option-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .custom-timer {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .custom-timer input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 20px;
+            width: 120px;
+            text-align: center;
+        }
+        
+        .custom-timer-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .music-selection {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .music-options {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .music-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .music-btn.active {
+            background: rgba(255,255,255,0.4);
+            border-color: rgba(255,255,255,0.6);
+        }
+        
+        .music-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .volume-control {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .volume-control input[type="range"] {
+            width: 100px;
+        }
+        
+        .timer-active {
+            display: none;
+        }
+        
+        .breathing-circle {
+            width: 150px;
+            height: 150px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: breathe 4s ease-in-out infinite;
+        }
+        
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        
+        .timer-phase {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .stop-btn {
+            background: rgba(220, 53, 69, 0.3);
+            border-color: rgba(220, 53, 69, 0.5);
+        }
+        
+        .stop-btn:hover {
+            background: rgba(220, 53, 69, 0.4);
+        }
+        
+        .timer-complete {
+            display: none;
+        }
+        
+        .completion-message h3 {
+            color: #ffd700;
+            margin-bottom: 1rem;
+        }
+        
+        .complete-btn, .restart-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .complete-btn:hover, .restart-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                🧠 MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}">🧘 Mindfulness</a>
+                            <a class="nav-link" href="{{ url_for('thought_record_dashboard') }}">🔍 Thought Detective</a>
+            <a class="nav-link" href="{{ url_for('behavioral_activation_dashboard') }}">🚀 Activities</a>
+            <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+            <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="dashboard-card">
+            <h3>👤 Welcome, {{ current_user.username }}!</h3>
+            <p class="lead">Your mental health journey starts here.</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h4>{{ assessments|length }}</h4>
+                    <small>Assessments</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h4>{{ journals|length }}</h4>
+                    <small>Journal Entries</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h4>{{ moods|length }}</h4>
+                    <small>Mood Entries</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h4>{{ goals|length }}</h4>
+                    <small>Active Goals</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Features -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="dashboard-card">
+                    <h4>🚀 Quick Actions</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>📋 PHQ-9 Assessment</h5>
+                                <p>Complete your depression screening assessment</p>
+                                <a href="{{ url_for('phq9_assessment') }}" class="btn btn-custom">Take Assessment</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>🧘‍♀️ Mindfulness</h5>
+                                <p>Practice breathing exercises and guided meditation</p>
+                                <a href="{{ url_for('mindfulness_exercises.mindfulness_dashboard') }}" class="btn btn-custom">Start Practice</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>📖 Write Journal</h5>
+                                <p>Express your thoughts and track your feelings</p>
+                                <a href="{{ url_for('journal') }}" class="btn btn-custom">Write Entry</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>😊 Track Mood</h5>
+                                <p>Log your daily mood and see patterns</p>
+                                <a href="{{ url_for('mood_tracking.mood_tracker') }}" class="btn btn-custom">Log Mood</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>🔍 Thought Detective</h5>
+                                <p>Challenge negative thoughts with CBT exercises</p>
+                                <a href="{{ url_for('thought_record_dashboard') }}" class="btn btn-custom">Start Exercise</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>🚀 Behavioral Activation</h5>
+                                <p>Plan and track activities to boost your mood</p>
+                                <a href="{{ url_for('behavioral_activation_dashboard') }}" class="btn btn-custom">Plan Activities</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>💡 Smart Micro-Assessment</h5>
+                                <p>Real-time mood tracking with intelligent insights</p>
+                                <a href="{{ url_for('smart_assessment.micro_assessment_dashboard') }}" class="btn btn-custom">Start Tracking</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card">
+                                <h5>📈 Mood Analytics</h5>
+                                <p>Advanced analytics and pattern recognition</p>
+                                <a href="{{ url_for('smart_assessment.micro_assessment_analytics') }}" class="btn btn-custom">View Analytics</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Recent Assessments -->
+                <div class="dashboard-card">
+                    <h4>📊 Recent Assessments</h4>
+                    {% if assessments %}
+                        {% for assessment in assessments[:3] %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <span class="severity-{{ assessment.severity_level }}">
+                                            {{ assessment.severity_level.replace('_', ' ').title() }}
+                                        </span>
+                                    </h6>
+                                    <p class="card-text">
+                                        <small>Total Score: {{ assessment.total_score }}/27</small><br>
+                                        <small>Q9 Risk: {% if assessment.q9_risk_flag %}⚠️ YES{% else %}✅ No{% endif %}</small><br>
+                                        <small>Date: {{ assessment.assessment_date.strftime('%Y-%m-%d') }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No assessments yet. Start a chat to get your first assessment!</p>
+                    {% endif %}
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="dashboard-card">
+                    <h4>📝 Recent Activity</h4>
+                    {% if journals %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6>📖 Latest Journal</h6>
+                                <p class="card-text">{{ journals[0].title or 'Untitled' }}</p>
+                                <small class="text-muted">{{ journals[0].timestamp.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if moods %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6>😊 Latest Mood</h6>
+                                <p class="card-text">{{ moods[0].mood_label or 'No label' }} ({{ moods[0].mood_score }}/10)</p>
+                                <small class="text-muted">{{ moods[0].timestamp.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if goals %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6>🎯 Active Goal</h6>
+                                <p class="card-text">{{ goals[0].title }}</p>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: {{ goals[0].progress }}%">{{ goals[0].progress }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meditation Timer Modal -->
+    <div class="meditation-modal" id="meditationModal">
+        <div class="meditation-content">
+            <button class="close-meditation" onclick="closeMeditationTimer()">×</button>
+            
+            <!-- Timer Setup -->
+            <div id="timerSetup">
+                <h3>🧘‍♀️ Meditation Timer</h3>
+                <p>Choose your session length and background sounds</p>
+                
+                <div class="timer-options">
+                    <button class="timer-option-btn" onclick="startMeditation(3)">3 min</button>
+                    <button class="timer-option-btn" onclick="startMeditation(5)">5 min</button>
+                    <button class="timer-option-btn" onclick="startMeditation(10)">10 min</button>
+                    <button class="timer-option-btn" onclick="startMeditation(15)">15 min</button>
+                    <button class="timer-option-btn" onclick="startMeditation(20)">20 min</button>
+                </div>
+                
+                <div class="custom-timer">
+                    <input type="number" id="customMinutes" placeholder="Custom minutes" min="1" max="60">
+                    <button onclick="startCustomMeditation()" class="custom-timer-btn">Start</button>
+                </div>
+                
+                <div class="music-selection">
+                    <h4>Background Sounds:</h4>
+                    <div class="music-options">
+                        <button class="music-btn active" onclick="selectMusic('none')" id="music-none">🔇 Silent</button>
+                        <button class="music-btn" onclick="selectMusic('rain')" id="music-rain">🌧️ Rain</button>
+                        <button class="music-btn" onclick="selectMusic('ocean')" id="music-ocean">🌊 Ocean</button>
+                        <button class="music-btn" onclick="selectMusic('forest')" id="music-forest">🌲 Forest</button>
+                        <button class="music-btn" onclick="selectMusic('white-noise')" id="music-white-noise">🌫️ White Noise</button>
+                    </div>
+                    
+                    <div class="volume-control">
+                        <label for="volumeSlider">Volume:</label>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="adjustVolume(this.value)">
+                        <span id="volumeDisplay">50%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timer Active -->
+            <div class="timer-active" id="timerActive">
+                <div class="breathing-circle" id="breathingCircle">🧘‍♀️</div>
+                <div class="timer-display" id="timerDisplay">5:00</div>
+                <div class="timer-phase" id="timerPhase">Get ready to begin...</div>
+                <div class="timer-controls">
+                    <button onclick="pauseTimer()" id="pauseBtn" class="control-btn">⏸️ Pause</button>
+                    <button onclick="toggleMusic()" id="musicBtn" class="control-btn">🔊 Music</button>
+                    <button onclick="stopTimer()" class="control-btn stop-btn">⏹️ Stop</button>
+                </div>
+            </div>
+            
+            <!-- Timer Complete -->
+            <div class="timer-complete" id="timerComplete">
+                <div class="completion-message">
+                    <h3>🌟 Well done!</h3>
+                    <p>You've completed your meditation session. Take a moment to notice how you feel.</p>
+                    <button onclick="closeMeditationTimer()" class="complete-btn">Continue</button>
+                    <button onclick="showTimerSetup()" class="restart-btn">Meditate Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Meditation Timer Variables
+        let meditationInterval;
+        let timeRemaining;
+        let isPaused = false;
+        let breathingInterval;
+        let currentMusic = 'none';
+        let musicPlaying = false;
+        let currentAudio = null;
+        let audioContext;
+        let masterGain;
+        
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioContext.createGain();
+                masterGain.connect(audioContext.destination);
+            }
+        }
+        
+        // Show meditation timer
+        function showMeditationTimer() {
+            document.getElementById('meditationModal').style.display = 'flex';
+            showTimerSetup();
+        }
+        
+        // Close meditation timer
+        function closeMeditationTimer() {
+            document.getElementById('meditationModal').style.display = 'none';
+            stopTimer();
+        }
+        
+        // Show timer setup
+        function showTimerSetup() {
+            document.getElementById('timerSetup').style.display = 'block';
+            document.getElementById('timerActive').style.display = 'none';
+            document.getElementById('timerComplete').style.display = 'none';
+        }
+        
+        // Select music
+        function selectMusic(musicType) {
+            document.querySelectorAll('.music-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`music-${musicType}`).classList.add('active');
+            currentMusic = musicType;
+            
+            if (musicPlaying) {
+                stopMusic();
+                if (musicType !== 'none') {
+                    playMusic();
+                }
+            }
+        }
+        
+        // Adjust volume
+        function adjustVolume(value) {
+            document.getElementById('volumeDisplay').textContent = value + '%';
+            if (masterGain) {
+                masterGain.gain.value = value / 100;
+            }
+        }
+        
+        // Play music
+        function playMusic() {
+            if (currentMusic === 'none') return;
+            
+            initAudio();
+            musicPlaying = true;
+            
+            // Create oscillator for different sounds
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(masterGain);
+            
+            switch(currentMusic) {
+                case 'rain':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 2);
+                    break;
+                case 'ocean':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 3);
+                    break;
+                case 'forest':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(350, audioContext.currentTime + 2.5);
+                    break;
+                case 'white-noise':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
+                    break;
+            }
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            oscillator.start();
+            currentAudio = { oscillator, gainNode };
+        }
+        
+        // Stop music
+        function stopMusic() {
+            if (currentAudio) {
+                currentAudio.oscillator.stop();
+                currentAudio = null;
+            }
+            musicPlaying = false;
+        }
+        
+        // Toggle music
+        function toggleMusic() {
+            if (musicPlaying) {
+                stopMusic();
+                document.getElementById('musicBtn').textContent = '🔇 Music';
+            } else {
+                if (currentMusic !== 'none') {
+                    playMusic();
+                    document.getElementById('musicBtn').textContent = '🔊 Music';
+                }
+            }
+        }
+        
+        // Start meditation
+        function startMeditation(minutes) {
+            timeRemaining = minutes * 60;
+            isPaused = false;
+            
+            document.getElementById('timerSetup').style.display = 'none';
+            document.getElementById('timerActive').style.display = 'block';
+            
+            updateTimerDisplay();
+            startBreathing();
+            
+            if (currentMusic !== 'none') {
+                playMusic();
+                document.getElementById('musicBtn').textContent = '🔊 Music';
+            }
+            
+            meditationInterval = setInterval(() => {
+                if (!isPaused) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    
+                    if (timeRemaining <= 0) {
+                        completeMeditation();
+                    }
+                }
+            }, 1000);
+        }
+        
+        // Start custom meditation
+        function startCustomMeditation() {
+            const customMinutes = document.getElementById('customMinutes').value;
+            if (customMinutes && customMinutes > 0 && customMinutes <= 60) {
+                startMeditation(parseInt(customMinutes));
+            }
+        }
+        
+        // Update timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Start breathing animation
+        function startBreathing() {
+            const breathingCircle = document.getElementById('breathingCircle');
+            let phase = 'inhale';
+            
+            breathingInterval = setInterval(() => {
+                if (phase === 'inhale') {
+                    breathingCircle.textContent = '🫁';
+                    document.getElementById('timerPhase').textContent = 'Breathe in...';
+                    phase = 'exhale';
+                } else {
+                    breathingCircle.textContent = '🧘‍♀️';
+                    document.getElementById('timerPhase').textContent = 'Breathe out...';
+                    phase = 'inhale';
+                }
+            }, 4000);
+        }
+        
+        // Pause timer
+        function pauseTimer() {
+            isPaused = !isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            if (isPaused) {
+                pauseBtn.textContent = '▶️ Resume';
+                document.getElementById('timerPhase').textContent = 'Paused';
+            } else {
+                pauseBtn.textContent = '⏸️ Pause';
+                document.getElementById('timerPhase').textContent = 'Breathe in...';
+            }
+        }
+        
+        // Stop timer
+        function stopTimer() {
+            clearInterval(meditationInterval);
+            clearInterval(breathingInterval);
+            stopMusic();
+            showTimerSetup();
+        }
+        
+        // Complete meditation
+        function completeMeditation() {
+            clearInterval(meditationInterval);
+            clearInterval(breathingInterval);
+            stopMusic();
+            
+            document.getElementById('timerActive').style.display = 'none';
+            document.getElementById('timerComplete').style.display = 'block';
+            
+            // Play completion sound
+            initAudio();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+            oscillator.frequency.exponentialRampToValueAtTime(659, audioContext.currentTime + 0.5); // E5
+            oscillator.frequency.exponentialRampToValueAtTime(784, audioContext.currentTime + 1); // G5
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 2);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('meditationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeMeditationTimer();
+            }
+        });
+    </script>
+</body>
+</html>

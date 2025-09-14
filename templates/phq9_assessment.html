@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHQ-9 Assessment - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .assessment-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem auto;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        .assessment-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .assessment-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .assessment-header p {
+            margin: 1rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .question-section {
+            padding: 2rem;
+        }
+        
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .question-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .option-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .option-item.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        .option-item input[type="radio"] {
+            margin-right: 1rem;
+            transform: scale(1.2);
+        }
+        
+        .option-label {
+            font-weight: 500;
+            flex: 1;
+        }
+        
+        .option-score {
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .progress-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .submit-section {
+            text-align: center;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 1rem 3rem;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-submit:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+        
+        .info-box h5 {
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-box p {
+            margin: 0;
+            color: #424242;
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-link {
+            color: #333 !important;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: #667eea !important;
+        }
+        
+        @media (max-width: 768px) {
+            .assessment-container {
+                margin: 1rem;
+                border-radius: 15px;
+            }
+            
+            .assessment-header h1 {
+                font-size: 2rem;
+            }
+            
+            .question-section {
+                padding: 1rem;
+            }
+            
+            .option-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .option-score {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('patient_dashboard') }}">
+                <i class="fas fa-brain"></i> MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('phq9_assessment') }}">📋 PHQ-9 Assessment</a>
+                <a class="nav-link" href="{{ url_for('journal') }}">📖 Journal</a>
+                <a class="nav-link" href="{{ url_for('mood_tracking.mood_tracker') }}">😊 Mood</a>
+                <a class="nav-link" href="{{ url_for('goals') }}">🎯 Goals</a>
+                <a class="nav-link" href="{{ url_for('insights') }}">📈 Insights</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="assessment-container">
+            <!-- Header -->
+            <div class="assessment-header">
+                <h1><i class="fas fa-clipboard-list"></i> PHQ-9 Assessment</h1>
+                <p>Patient Health Questionnaire - Depression Screening</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="question-section">
+                <div class="info-box">
+                    <h5><i class="fas fa-info-circle"></i> About This Assessment</h5>
+                    <p>The PHQ-9 is a 9-question depression screening tool. Please answer each question based on how you've been feeling over the past 2 weeks. This assessment helps us understand your current mental health status and provide appropriate support.</p>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="progress-section">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressText">Question 1 of 9</span>
+                    </div>
+                </div>
+
+                <!-- Assessment Form -->
+                <form method="POST" id="phq9Form">
+                    <div class="question-card" data-question="1">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">1</div>
+                            <div class="question-text">Little interest or pleasure in doing things</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q1" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q1" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q1" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q1" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="2">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">2</div>
+                            <div class="question-text">Feeling down, depressed, or hopeless</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q2" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q2" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q2" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q2" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="3">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">3</div>
+                            <div class="question-text">Trouble falling or staying asleep, or sleeping too much</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q3" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q3" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q3" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q3" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">4</div>
+                            <div class="question-text">Feeling tired or having little energy</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q4" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q4" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q4" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q4" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="5">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">5</div>
+                            <div class="question-text">Poor appetite or overeating</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q5" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q5" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q5" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q5" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="6">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">6</div>
+                            <div class="question-text">Feeling bad about yourself - or that you are a failure or have let yourself or your family down</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q6" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q6" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q6" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q6" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="7">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">7</div>
+                            <div class="question-text">Trouble concentrating on things, such as reading the newspaper or watching television</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q7" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q7" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q7" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q7" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="8">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">8</div>
+                            <div class="question-text">Moving or speaking so slowly that other people could have noticed. Or the opposite - being so fidgety or restless that you have been moving around a lot more than usual</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q8" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q8" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q8" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q8" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-card" data-question="9">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="question-number">9</div>
+                            <div class="question-text">Thoughts that you would be better off dead or of hurting yourself in some way</div>
+                        </div>
+                        <div class="options-container">
+                            <label class="option-item">
+                                <input type="radio" name="q9" value="0" required>
+                                <span class="option-label">Not at all</span>
+                                <span class="option-score">0</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q9" value="1" required>
+                                <span class="option-label">Several days</span>
+                                <span class="option-score">1</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q9" value="2" required>
+                                <span class="option-label">More than half the days</span>
+                                <span class="option-score">2</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="q9" value="3" required>
+                                <span class="option-label">Nearly every day</span>
+                                <span class="option-score">3</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Section -->
+                    <div class="submit-section">
+                        <button type="submit" class="btn btn-submit" id="submitBtn" disabled>
+                            <i class="fas fa-paper-plane"></i> Submit Assessment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Progress tracking
+        const questions = document.querySelectorAll('.question-card');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('phq9Form');
+
+        // Option selection styling
+        document.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove selected class from siblings
+                const radio = this.querySelector('input[type="radio"]');
+                const siblings = this.parentElement.querySelectorAll('.option-item');
+                siblings.forEach(sib => sib.classList.remove('selected'));
+                
+                // Add selected class to clicked item
+                this.classList.add('selected');
+                radio.checked = true;
+                
+                // Update progress
+                updateProgress();
+            });
+        });
+
+        function updateProgress() {
+            const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+            const progress = (answeredQuestions / 9) * 100;
+            
+            progressFill.style.width = progress + '%';
+            progressText.textContent = `Question ${answeredQuestions} of 9`;
+            
+            // Enable submit button when all questions are answered
+            if (answeredQuestions === 9) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assessment';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fas fa-clock"></i> Complete All Questions (${answeredQuestions}/9)`;
+            }
+        }
+
+        // Form submission
+        form.addEventListener('submit', function(e) {
+            const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+            if (answeredQuestions < 9) {
+                e.preventDefault();
+                alert('Please answer all questions before submitting.');
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        });
+
+        // Initialize progress
+        updateProgress();
+    </script>
+</body>
+</html>

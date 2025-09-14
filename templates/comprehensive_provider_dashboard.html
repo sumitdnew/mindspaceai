@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Provider Dashboard - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .status-red { border-left: 5px solid #dc3545; background-color: #fff5f5; }
+        .status-orange { border-left: 5px solid #fd7e14; background-color: #fff8f0; }
+        .status-yellow { border-left: 5px solid #ffc107; background-color: #fffbf0; }
+        .status-green { border-left: 5px solid #28a745; background-color: #f8fff8; }
+        
+        .traffic-light {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .traffic-red { background-color: #dc3545; }
+        .traffic-orange { background-color: #fd7e14; }
+        .traffic-yellow { background-color: #ffc107; }
+        .traffic-green { background-color: #28a745; }
+        
+        .priority-critical { color: #dc3545; font-weight: bold; }
+        .priority-high { color: #fd7e14; font-weight: bold; }
+        .priority-medium { color: #ffc107; font-weight: bold; }
+        .priority-low { color: #28a745; font-weight: bold; }
+        
+        .patient-card {
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .patient-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .worklist-item {
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+        .worklist-item:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .worklist-critical { border-left-color: #dc3545; }
+        .worklist-high { border-left-color: #fd7e14; }
+        .worklist-medium { border-left-color: #ffc107; }
+        .worklist-low { border-left-color: #28a745; }
+        
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .agenda-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .agenda-high { border-left-color: #dc3545; }
+        .agenda-medium { border-left-color: #ffc107; }
+        .agenda-low { border-left-color: #28a745; }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #667eea;
+            font-weight: 600;
+            padding: 15px 25px;
+        }
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 25px;
+        }
+        
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .system-health {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+        .health-excellent { background: linear-gradient(45deg, #28a745, #20c997); }
+        .health-good { background: linear-gradient(45deg, #17a2b8, #20c997); }
+        .health-fair { background: linear-gradient(45deg, #ffc107, #fd7e14); }
+        .health-poor { background: linear-gradient(45deg, #dc3545, #fd7e14); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-brain"></i> MindSpace ML - Provider Dashboard
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/provider_dashboard_basic">
+                    <i class="fas fa-tachometer-alt"></i> Basic Dashboard
+                </a>
+                <a class="nav-link" href="/provider/comprehensive_dashboard">
+                    <i class="fas fa-chart-line"></i> Comprehensive Dashboard
+                </a>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- System Health Overview -->
+        <div class="dashboard-card">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <h3><i class="fas fa-users"></i></h3>
+                        <h2 id="totalPatients">0</h2>
+                        <p>Total Patients</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <h3><i class="fas fa-user-check"></i></h3>
+                        <h2 id="activePatients">0</h2>
+                        <p>Active Patients</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <h3><i class="fas fa-chart-line"></i></h3>
+                        <h2 id="avgEngagement">0%</h2>
+                        <p>Avg Engagement</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="system-health" id="systemHealth">
+                        <h3><i class="fas fa-heartbeat"></i></h3>
+                        <h2 id="healthStatus">Good</h2>
+                        <p>System Health</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Tabs -->
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                    <i class="fas fa-eye"></i> Patient Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="worklist-tab" data-bs-toggle="tab" data-bs-target="#worklist" type="button" role="tab">
+                    <i class="fas fa-tasks"></i> Worklist
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab">
+                    <i class="fas fa-calendar-check"></i> Session Prep
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="outcomes-tab" data-bs-toggle="tab" data-bs-target="#outcomes" type="button" role="tab">
+                    <i class="fas fa-chart-bar"></i> Outcomes
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="dashboardTabContent">
+            <!-- Patient Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <h3><i class="fas fa-users"></i> Patient Status Overview</h3>
+                <div class="row" id="patientOverview">
+                    <!-- Patient cards will be populated here -->
+                </div>
+            </div>
+
+            <!-- Worklist Tab -->
+            <div class="tab-pane fade" id="worklist" role="tabpanel">
+                <h3><i class="fas fa-tasks"></i> Provider Worklist</h3>
+                
+                <!-- Immediate Attention -->
+                <div class="dashboard-card">
+                    <h4 class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Immediate Attention Required
+                    </h4>
+                    <div id="immediateAttention">
+                        <!-- Immediate attention items -->
+                    </div>
+                </div>
+
+                <!-- Treatment Adjustments -->
+                <div class="dashboard-card">
+                    <h4 class="text-warning">
+                        <i class="fas fa-tools"></i> Treatment Adjustments Needed
+                    </h4>
+                    <div id="treatmentAdjustments">
+                        <!-- Treatment adjustment items -->
+                    </div>
+                </div>
+
+                <!-- Good Progress -->
+                <div class="dashboard-card">
+                    <h4 class="text-success">
+                        <i class="fas fa-star"></i> Good Progress
+                    </h4>
+                    <div id="goodProgress">
+                        <!-- Good progress items -->
+                    </div>
+                </div>
+
+                <!-- Concerning Patterns -->
+                <div class="dashboard-card">
+                    <h4 class="text-info">
+                        <i class="fas fa-eye"></i> Concerning Patterns
+                    </h4>
+                    <div id="concerningPatterns">
+                        <!-- Concerning pattern items -->
+                    </div>
+                </div>
+
+                <!-- Ready for Reassessment -->
+                <div class="dashboard-card">
+                    <h4 class="text-primary">
+                        <i class="fas fa-clipboard-check"></i> Ready for PHQ-9 Reassessment
+                    </h4>
+                    <div id="readyForReassessment">
+                        <!-- Reassessment items -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Preparation Tab -->
+            <div class="tab-pane fade" id="sessions" role="tabpanel">
+                <h3><i class="fas fa-calendar-check"></i> Session Preparation</h3>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-user"></i> Select Patient</h4>
+                            <select class="form-select" id="patientSelect">
+                                <option value="">Choose a patient...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sessionPrepContent" style="display: none;">
+                    <!-- Key Developments -->
+                    <div class="dashboard-card">
+                        <h4><i class="fas fa-lightbulb"></i> Key Developments Since Last Session</h4>
+                        <div id="keyDevelopments">
+                            <!-- Key developments -->
+                        </div>
+                    </div>
+
+                    <!-- Session Agenda -->
+                    <div class="dashboard-card">
+                        <h4><i class="fas fa-list"></i> Suggested Session Agenda</h4>
+                        <div id="sessionAgenda">
+                            <!-- Session agenda -->
+                        </div>
+                    </div>
+
+                    <!-- Crisis Episodes -->
+                    <div class="dashboard-card">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Recent Crisis Episodes</h4>
+                        <div id="crisisEpisodes">
+                            <!-- Crisis episodes -->
+                        </div>
+                    </div>
+
+                    <!-- Progress Highlights -->
+                    <div class="dashboard-card">
+                        <h4><i class="fas fa-star"></i> Progress Highlights</h4>
+                        <div id="progressHighlights">
+                            <!-- Progress highlights -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outcomes Tab -->
+            <div class="tab-pane fade" id="outcomes" role="tabpanel">
+                <h3><i class="fas fa-chart-bar"></i> Treatment Outcomes</h3>
+                
+                <!-- Patient Outcomes -->
+                <div class="dashboard-card">
+                    <h4><i class="fas fa-user-chart"></i> Individual Patient Outcomes</h4>
+                    <div id="patientOutcomes">
+                        <!-- Patient outcomes -->
+                    </div>
+                </div>
+
+                <!-- System Effectiveness -->
+                <div class="dashboard-card">
+                    <h4><i class="fas fa-chart-line"></i> System Effectiveness</h4>
+                    <div id="systemEffectiveness">
+                        <!-- System effectiveness -->
+                    </div>
+                </div>
+
+                <!-- Quality Metrics -->
+                <div class="dashboard-card">
+                    <h4><i class="fas fa-award"></i> Quality Metrics</h4>
+                    <div id="qualityMetrics">
+                        <!-- Quality metrics -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let dashboardData = {};
+        let selectedPatientId = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Patient select change
+            document.getElementById('patientSelect').addEventListener('change', function() {
+                selectedPatientId = this.value;
+                if (selectedPatientId) {
+                    loadPatientSessionData(selectedPatientId);
+                    document.getElementById('sessionPrepContent').style.display = 'block';
+                } else {
+                    document.getElementById('sessionPrepContent').style.display = 'none';
+                }
+            });
+        }
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/provider/api/dashboard/system_metrics');
+                const data = await response.json();
+                dashboardData = data;
+                
+                populateSystemMetrics(data);
+                populatePatientOverview();
+                populateWorklist();
+                populatePatientSelect();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function populateSystemMetrics(data) {
+            document.getElementById('totalPatients').textContent = data.total_patients || 0;
+            document.getElementById('activePatients').textContent = data.active_patients || 0;
+            document.getElementById('avgEngagement').textContent = `${(data.average_engagement || 0).toFixed(1)}%`;
+            
+            const healthStatus = data.system_health || 'good';
+            document.getElementById('healthStatus').textContent = healthStatus.charAt(0).toUpperCase() + healthStatus.slice(1);
+            document.getElementById('systemHealth').className = `system-health health-${healthStatus}`;
+        }
+
+        function populatePatientOverview() {
+            const container = document.getElementById('patientOverview');
+            container.innerHTML = '';
+
+            if (!dashboardData.patients) return;
+
+            dashboardData.patients.forEach(patient => {
+                const patientCard = createPatientCard(patient);
+                container.appendChild(patientCard);
+            });
+        }
+
+        function createPatientCard(patient) {
+            const card = document.createElement('div');
+            card.className = `col-md-6 col-lg-4 mb-3`;
+            
+            const statusClass = `status-${patient.traffic_light_status}`;
+            const trafficClass = `traffic-${patient.traffic_light_status}`;
+            
+            card.innerHTML = `
+                <div class="card patient-card ${statusClass}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title">
+                                    <span class="traffic-light ${trafficClass}"></span>
+                                    ${patient.patient_name}
+                                </h6>
+                                <p class="card-text">
+                                    <small><strong>Age:</strong> ${patient.age || 'N/A'}</small><br>
+                                    <small><strong>Gender:</strong> ${patient.gender || 'N/A'}</small><br>
+                                    <small><strong>Mood:</strong> ${patient.mood_trajectory?.arrow || '→'} ${patient.mood_trajectory?.description || 'No data'}</small><br>
+                                    <small><strong>Engagement:</strong> ${(patient.engagement_percentage * 100).toFixed(1)}%</small><br>
+                                    <small><strong>Days since crisis:</strong> ${patient.days_since_crisis}</small><br>
+                                    <small><strong>Adherence:</strong> ${(patient.adherence_score * 100).toFixed(1)}%</small>
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${getRiskBadgeColor(patient.risk_level)}">${patient.risk_level}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <strong>Last Activity:</strong> ${patient.last_activity || 'No recent activity'}
+                            </small>
+                        </div>
+                        
+                        ${patient.recommendations ? `
+                        <div class="mt-2">
+                            <small class="text-primary">
+                                <strong>Recommendation:</strong> ${patient.recommendations[0] || 'No recommendations'}
+                            </small>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function getRiskBadgeColor(riskLevel) {
+            switch(riskLevel) {
+                case 'critical': return 'danger';
+                case 'high': return 'warning';
+                case 'medium': return 'info';
+                case 'low': return 'success';
+                default: return 'secondary';
+            }
+        }
+
+        async function populateWorklist() {
+            try {
+                const response = await fetch('/provider/api/dashboard/worklist');
+                const worklistData = await response.json();
+                
+                populateWorklistSection('immediateAttention', worklistData.immediate_attention, 'critical');
+                populateWorklistSection('treatmentAdjustments', worklistData.treatment_adjustments, 'high');
+                populateWorklistSection('goodProgress', worklistData.good_progress, 'medium');
+                populateWorklistSection('concerningPatterns', worklistData.concerning_patterns, 'high');
+                populateWorklistSection('readyForReassessment', worklistData.ready_for_reassessment, 'medium');
+                
+            } catch (error) {
+                console.error('Error loading worklist data:', error);
+            }
+        }
+
+        function populateWorklistSection(containerId, items, priority) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No items in this category.</div>';
+                return;
+            }
+            
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `worklist-item worklist-${priority}`;
+                itemDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="priority-${priority}">${item.patient_name}</h6>
+                            <p class="mb-1">${item.reason}</p>
+                            <small class="text-muted">
+                                <strong>Urgency:</strong> ${item.urgency} | 
+                                <strong>Action:</strong> ${item.recommended_action}
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function populatePatientSelect() {
+            const select = document.getElementById('patientSelect');
+            select.innerHTML = '<option value="">Choose a patient...</option>';
+            
+            if (!dashboardData.patients) return;
+            
+            dashboardData.patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.patient_id;
+                option.textContent = patient.patient_name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadPatientSessionData(patientId) {
+            try {
+                const response = await fetch(`/provider/api/dashboard/patient/${patientId}`);
+                const patientData = await response.json();
+                
+                populateKeyDevelopments(patientData.session_preparation[patientId]?.key_developments || []);
+                populateSessionAgenda(patientData.session_preparation[patientId]?.session_agenda || []);
+                populateCrisisEpisodes(patientData.session_preparation[patientId]?.crisis_episodes || []);
+                populateProgressHighlights(patientData.session_preparation[patientId]?.progress_highlights || []);
+                
+            } catch (error) {
+                console.error('Error loading patient session data:', error);
+            }
+        }
+
+        function populateKeyDevelopments(developments) {
+            const container = document.getElementById('keyDevelopments');
+            container.innerHTML = '';
+            
+            if (developments.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No key developments to report.</div>';
+                return;
+            }
+            
+            developments.forEach(dev => {
+                const devDiv = document.createElement('div');
+                devDiv.className = 'alert alert-info';
+                devDiv.innerHTML = `
+                    <strong>${dev.type.replace('_', ' ').toUpperCase()}:</strong> ${dev.description}
+                    <span class="badge bg-${dev.trend === 'improving' || dev.trend === 'good' ? 'success' : dev.trend === 'concerning' ? 'warning' : 'info'} float-end">
+                        ${dev.trend}
+                    </span>
+                `;
+                container.appendChild(devDiv);
+            });
+        }
+
+        function populateSessionAgenda(agenda) {
+            const container = document.getElementById('sessionAgenda');
+            container.innerHTML = '';
+            
+            if (agenda.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No agenda items generated.</div>';
+                return;
+            }
+            
+            agenda.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `agenda-item agenda-${item.priority}`;
+                itemDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="priority-${item.priority}">${item.topic}</h6>
+                            <p class="mb-1">${item.description}</p>
+                        </div>
+                        <span class="badge bg-secondary">${item.time_allocation}</span>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function populateCrisisEpisodes(episodes) {
+            const container = document.getElementById('crisisEpisodes');
+            container.innerHTML = '';
+            
+            if (episodes.length === 0) {
+                container.innerHTML = '<div class="alert alert-success">No crisis episodes in the last week.</div>';
+                return;
+            }
+            
+            episodes.forEach(episode => {
+                const episodeDiv = document.createElement('div');
+                episodeDiv.className = 'alert alert-danger';
+                episodeDiv.innerHTML = `
+                    <strong>${episode.date}:</strong> ${episode.description}
+                    <br><small class="text-muted">Context: ${episode.context}</small>
+                `;
+                container.appendChild(episodeDiv);
+            });
+        }
+
+        function populateProgressHighlights(highlights) {
+            const container = document.getElementById('progressHighlights');
+            container.innerHTML = '';
+            
+            if (highlights.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No progress highlights to report.</div>';
+                return;
+            }
+            
+            highlights.forEach(highlight => {
+                const highlightDiv = document.createElement('div');
+                highlightDiv.className = 'alert alert-success';
+                highlightDiv.innerHTML = `
+                    <strong>${highlight.type}:</strong> ${highlight.description}
+                    <br><small class="text-muted">Impact: ${highlight.impact}</small>
+                `;
+                container.appendChild(highlightDiv);
+            });
+        }
+
+        // Auto-refresh dashboard every 5 minutes
+        setInterval(loadDashboardData, 300000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "total_assessments": 192,
+  "unique_patients": 9,
+  "severity_distribution": {
+    "mild": 32,
+    "moderate": 44,
+    "severe": 52,
+    "moderately_severe": 38,
+    "minimal": 26
+  },
+  "crisis_alerts": 59,
+  "q9_risk_flags": 37,
+  "crisis_rate": 30.729166666666668,
+  "q9_risk_rate": 19.270833333333336
+}

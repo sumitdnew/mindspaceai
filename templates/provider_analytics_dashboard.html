@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Analytics Dashboard - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container-fluid { padding: 20px; }
+        .header { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 30px; 
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .risk-alert {
+            border-left: 4px solid #dc3545;
+            background: #f8d7da;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .risk-alert.high {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .risk-alert.moderate {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        .patient-row {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+        .patient-row.high-risk {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .patient-row.moderate-risk {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .insight-card {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+        }
+        .recommendation-card {
+            background: #f3e5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #9c27b0;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-excellent { background: #d4edda; color: #155724; }
+        .status-good { background: #d1ecf1; color: #0c5460; }
+        .status-moderate { background: #fff3cd; color: #856404; }
+        .status-needs-attention { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-brain"></i> MindSpace ML - Provider Analytics
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('provider_dashboard') }}">
+                        <i class="fas fa-users"></i> Patient Dashboard
+                    </a>
+                    <a class="nav-link active" href="{{ url_for('provider_analytics.provider_dashboard') }}">
+                        <i class="fas fa-chart-line"></i> Analytics
+                    </a>
+                    <a class="nav-link" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Exercise Analytics Dashboard</h1>
+            <p>Comprehensive insights into patient exercise effectiveness and clinical progress</p>
+        </div>
+
+        <!-- Key Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="totalPatients">{{ data.patient_overview.total_patients }}</div>
+                    <div class="metric-label">Total Patients</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="highEngagement">{{ data.patient_overview.high_engagement_count }}</div>
+                    <div class="metric-label">High Engagement</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="criticalAlerts">{{ data.risk_alert_system.critical_count }}</div>
+                    <div class="metric-label">Critical Alerts</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="avgEffectiveness">{{ "%.1f"|format(data.treatment_effectiveness.avg_effectiveness_score * 10) }}</div>
+                    <div class="metric-label">Avg Effectiveness (/10)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Tabs -->
+        <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                    <i class="fas fa-eye"></i> Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="patients-tab" data-bs-toggle="tab" data-bs-target="#patients" type="button" role="tab">
+                    <i class="fas fa-users"></i> Patient Details
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="risks-tab" data-bs-toggle="tab" data-bs-target="#risks" type="button" role="tab">
+                    <i class="fas fa-exclamation-triangle"></i> Risk Alerts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab">
+                    <i class="fas fa-lightbulb"></i> Recommendations
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="dashboardTabContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-chart-pie"></i> Engagement Distribution</h4>
+                            <div class="chart-container">
+                                <canvas id="engagementChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-chart-line"></i> Clinical Progress</h4>
+                            <div class="chart-container">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-clock"></i> Recent Activity</h4>
+                            <div id="recentActivity">
+                                <!-- Recent activity will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Details Tab -->
+            <div class="tab-pane fade" id="patients" role="tabpanel">
+                <div class="dashboard-card">
+                    <h4><i class="fas fa-users"></i> Patient Exercise Overview</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Engagement Score</th>
+                                    <th>Completion Rate</th>
+                                    <th>Avg Duration</th>
+                                    <th>Last Activity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientTableBody">
+                                <!-- Patient data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Alerts Tab -->
+            <div class="tab-pane fade" id="risks" role="tabpanel">
+                <div class="dashboard-card">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Risk Alerts</h4>
+                    <div id="riskAlerts">
+                        <!-- Risk alerts will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-chart-bar"></i> Exercise Type Effectiveness</h4>
+                            <div class="chart-container">
+                                <canvas id="exerciseEffectivenessChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-clock"></i> Timing Preferences</h4>
+                            <div class="chart-container">
+                                <canvas id="timingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-chart-line"></i> Treatment Effectiveness Trends</h4>
+                            <div class="chart-container">
+                                <canvas id="effectivenessTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Tab -->
+            <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-lightbulb"></i> Evidence-Based Recommendations</h4>
+                            <div id="evidenceRecommendations">
+                                <!-- Evidence-based recommendations will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dashboard-card">
+                            <h4><i class="fas fa-cogs"></i> Implementation Strategies</h4>
+                            <div id="implementationStrategies">
+                                <!-- Implementation strategies will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dashboard data from Flask
+        const dashboardData = {{ data | tojson | safe }};
+        
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            populatePatientTable();
+            populateRiskAlerts();
+            populateRecommendations();
+            populateRecentActivity();
+        });
+
+        function initializeCharts() {
+            // Engagement Distribution Chart
+            const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+            new Chart(engagementCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Engagement', 'Moderate Engagement', 'Low Engagement'],
+                    datasets: [{
+                        data: [
+                            dashboardData.patient_overview.high_engagement_count,
+                            dashboardData.patient_overview.moderate_engagement_count,
+                            dashboardData.patient_overview.low_engagement_count
+                        ],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Clinical Progress Chart
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            new Chart(progressCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Excellent', 'Good', 'Moderate', 'Needs Attention'],
+                    datasets: [{
+                        label: 'Number of Patients',
+                        data: [
+                            dashboardData.clinical_progress_indicators.excellent_progress_count,
+                            dashboardData.clinical_progress_indicators.good_progress_count,
+                            dashboardData.clinical_progress_indicators.moderate_progress_count,
+                            dashboardData.clinical_progress_indicators.needs_attention_count
+                        ],
+                        backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Exercise Type Effectiveness Chart
+            const exerciseCtx = document.getElementById('exerciseEffectivenessChart').getContext('2d');
+            const exerciseData = dashboardData.population_analysis?.engagement_patterns?.exercise_type_preferences || {};
+            new Chart(exerciseCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(exerciseData),
+                    datasets: [{
+                        label: 'Usage Percentage',
+                        data: Object.values(exerciseData).map(item => item.percentage),
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Timing Preferences Chart
+            const timingCtx = document.getElementById('timingChart').getContext('2d');
+            const timingData = dashboardData.population_analysis?.engagement_patterns?.timing_preferences || {};
+            new Chart(timingCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(timingData),
+                    datasets: [{
+                        data: Object.values(timingData).map(item => item.percentage),
+                        backgroundColor: ['#ff9a9e', '#fecfef', '#fecfef', '#a8edea']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function populatePatientTable() {
+            const tableBody = document.getElementById('patientTableBody');
+            const patients = dashboardData.patient_overview.patients;
+            
+            tableBody.innerHTML = '';
+            patients.forEach(patient => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${patient.patient_name}</strong></td>
+                    <td>
+                        <div class="progress-bar-custom">
+                            <div class="progress-fill" style="width: ${patient.engagement_score * 100}%"></div>
+                        </div>
+                        <small>${(patient.engagement_score * 100).toFixed(1)}%</small>
+                    </td>
+                    <td>${(patient.completion_rate * 100).toFixed(1)}%</td>
+                    <td>${patient.avg_session_duration} min</td>
+                    <td>${patient.last_activity}</td>
+                    <td><span class="status-badge status-${patient.engagement_status}">${patient.engagement_status}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function populateRiskAlerts() {
+            const alertsContainer = document.getElementById('riskAlerts');
+            const alerts = dashboardData.risk_alert_system.alerts;
+            
+            if (alerts.length === 0) {
+                alertsContainer.innerHTML = '<div class="alert alert-success">No risk alerts at this time.</div>';
+                return;
+            }
+            
+            alertsContainer.innerHTML = '';
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `risk-alert ${alert.risk_level}`;
+                alertDiv.innerHTML = `
+                    <h6><i class="fas fa-exclamation-triangle"></i> ${alert.patient_name}</h6>
+                    <p><strong>Risk Level:</strong> ${alert.risk_level.toUpperCase()}</p>
+                    <p><strong>Risk Score:</strong> ${(alert.risk_score * 100).toFixed(1)}%</p>
+                    <p><strong>Recommended Actions:</strong></p>
+                    <ul>
+                        ${alert.recommended_actions.map(action => `<li>${action}</li>`).join('')}
+                    </ul>
+                    <small>Last Updated: ${alert.last_updated}</small>
+                `;
+                alertsContainer.appendChild(alertDiv);
+            });
+        }
+
+        function populateRecommendations() {
+            const evidenceContainer = document.getElementById('evidenceRecommendations');
+            const strategiesContainer = document.getElementById('implementationStrategies');
+            
+            const evidence = dashboardData.evidence_based_recommendations;
+            
+            // Evidence-based recommendations
+            evidenceContainer.innerHTML = '';
+            if (evidence.general_guidelines) {
+                evidence.general_guidelines.forEach(guideline => {
+                    const card = document.createElement('div');
+                    card.className = 'insight-card';
+                    card.innerHTML = `<i class="fas fa-check-circle"></i> ${guideline}`;
+                    evidenceContainer.appendChild(card);
+                });
+            }
+            
+            // Implementation strategies
+            strategiesContainer.innerHTML = '';
+            if (evidence.implementation_strategies) {
+                evidence.implementation_strategies.forEach(strategy => {
+                    const card = document.createElement('div');
+                    card.className = 'recommendation-card';
+                    card.innerHTML = `<i class="fas fa-lightbulb"></i> ${strategy}`;
+                    strategiesContainer.appendChild(card);
+                });
+            }
+        }
+
+        function populateRecentActivity() {
+            const activityContainer = document.getElementById('recentActivity');
+            const patients = dashboardData.patient_overview.patients;
+            
+            // Sort by last activity and show recent patients
+            const recentPatients = patients
+                .filter(p => p.days_since_last_session !== null)
+                .sort((a, b) => a.days_since_last_session - b.days_since_last_session)
+                .slice(0, 5);
+            
+            activityContainer.innerHTML = '';
+            recentPatients.forEach(patient => {
+                const activityDiv = document.createElement('div');
+                activityDiv.className = 'patient-row';
+                activityDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>${patient.patient_name}</strong>
+                        </div>
+                        <div class="col-md-3">
+                            Last session: ${patient.days_since_last_session} days ago
+                        </div>
+                        <div class="col-md-3">
+                            Engagement: ${(patient.engagement_score * 100).toFixed(1)}%
+                        </div>
+                        <div class="col-md-2">
+                            <span class="status-badge status-${patient.engagement_status}">${patient.engagement_status}</span>
+                        </div>
+                    </div>
+                `;
+                activityContainer.appendChild(activityDiv);
+            });
+        }
+
+        // Auto-refresh dashboard data every 5 minutes
+        setInterval(function() {
+            fetch('/api/provider/dashboard-data')
+                .then(response => response.json())
+                .then(data => {
+                    // Update dashboard data and refresh charts
+                    Object.assign(dashboardData, data);
+                    location.reload(); // Simple refresh for demo
+                })
+                .catch(error => console.error('Error refreshing dashboard:', error));
+        }, 300000); // 5 minutes
+    </script>
+</body>
+</html>

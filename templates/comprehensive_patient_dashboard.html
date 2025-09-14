@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Patient Insights Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            border: none;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .status-green { background-color: #28a745; }
+        .status-yellow { background-color: #ffc107; }
+        .status-orange { background-color: #fd7e14; }
+        .status-red { background-color: #dc3545; }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .insight-card {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .recommendation-card {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .concern-card {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .crisis-card {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .talking-point {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: none;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .refresh-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="container-fluid">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="dashboard-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2><i class="fas fa-user-md"></i> Comprehensive Patient Insights</h2>
+                                <p class="text-muted mb-0">Real-time analysis and treatment recommendations</p>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary" id="lastUpdated">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Info -->
+            <div class="row mb-4" id="patientInfo" style="display: none;">
+                <div class="col-12">
+                    <div class="dashboard-card">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4><i class="fas fa-user"></i> <span id="patientName">Patient Name</span></h4>
+                                <p class="text-muted">Current Severity: <span id="currentSeverity">-</span></p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="status-indicator" id="riskIndicator"></div>
+                                <span id="riskLevel">Risk Level</span>
+                                <br>
+                                <small class="text-muted">Treatment Urgency: <span id="treatmentUrgency">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="row mb-4" id="keyMetrics" style="display: none;">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-value" id="moodCheckIns">-</div>
+                        <div class="metric-label">Today's Mood Check-ins</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-value" id="exercisesCompleted">-</div>
+                        <div class="metric-label">Exercises Completed</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-value" id="exercisesSkipped">-</div>
+                        <div class="metric-label">Exercises Skipped</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div class="metric-value" id="crisisEpisodes">-</div>
+                        <div class="metric-label">Crisis Episodes (Month)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Tabs -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="dashboard-card">
+                        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                                    <i class="fas fa-chart-line"></i> Overview
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab">
+                                    <i class="fas fa-lightbulb"></i> Recommendations
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="session-tab" data-bs-toggle="tab" data-bs-target="#session" type="button" role="tab">
+                                    <i class="fas fa-calendar-check"></i> Session Prep
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="crisis-tab" data-bs-toggle="tab" data-bs-target="#crisis" type="button" role="tab">
+                                    <i class="fas fa-exclamation-triangle"></i> Crisis Management
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="documentation-tab" data-bs-toggle="tab" data-bs-target="#documentation" type="button" role="tab">
+                                    <i class="fas fa-file-medical"></i> Documentation
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="dashboardTabContent">
+                            <!-- Overview Tab -->
+                            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-chart-area"></i> Current Status</h5>
+                                        <div id="currentStatus">
+                                            <!-- Current status will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-trending-up"></i> Weekly Trends</h5>
+                                        <div id="weeklyTrends">
+                                            <!-- Weekly trends will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <h5><i class="fas fa-exclamation-circle"></i> Today's Concerns</h5>
+                                        <div id="todayConcerns">
+                                            <!-- Today's concerns will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendations Tab -->
+                            <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                                <div class="row mt-4">
+                                    <div class="col-md-4">
+                                        <h5><i class="fas fa-bullseye"></i> Session Focus</h5>
+                                        <div id="sessionFocus">
+                                            <!-- Session focus recommendations will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5><i class="fas fa-cogs"></i> Treatment Adjustments</h5>
+                                        <div id="treatmentAdjustments">
+                                            <!-- Treatment adjustments will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5><i class="fas fa-bolt"></i> Immediate Actions</h5>
+                                        <div id="immediateActions">
+                                            <!-- Immediate actions will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Session Prep Tab -->
+                            <div class="tab-pane fade" id="session" role="tabpanel">
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-calendar-week"></i> Week Overview</h5>
+                                        <div id="weekOverview">
+                                            <!-- Week overview will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-comments"></i> Talking Points</h5>
+                                        <div id="talkingPoints">
+                                            <!-- Talking points will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Crisis Management Tab -->
+                            <div class="tab-pane fade" id="crisis" role="tabpanel">
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-shield-alt"></i> Safety Planning</h5>
+                                        <div id="safetyPlanning">
+                                            <!-- Safety planning will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-first-aid"></i> Intervention Recommendations</h5>
+                                        <div id="interventionRecommendations">
+                                            <!-- Intervention recommendations will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Documentation Tab -->
+                            <div class="tab-pane fade" id="documentation" role="tabpanel">
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-chart-bar"></i> Objective Measurements</h5>
+                                        <div id="objectiveMeasurements">
+                                            <!-- Objective measurements will be populated here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5><i class="fas fa-clipboard-list"></i> Progress Notes</h5>
+                                        <div id="progressNotes">
+                                            <!-- Progress notes will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <h5><i class="fas fa-target"></i> Outcome Measurements</h5>
+                                        <div id="outcomeMeasurements">
+                                            <!-- Outcome measurements will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="loadPatientInsights()" title="Refresh Data">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading patient insights...</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let patientId = {{ patient_id }};
+        let insightsData = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPatientInsights();
+        });
+
+        async function loadPatientInsights() {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/comprehensive-insights/${patientId}`);
+                insightsData = await response.json();
+                
+                if (insightsData.error) {
+                    showError(insightsData.error);
+                    return;
+                }
+                
+                displayPatientInsights(insightsData);
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('Error loading patient insights:', error);
+                showError('Failed to load patient insights');
+                showLoading(false);
+            }
+        }
+
+        function displayPatientInsights(data) {
+            // Update patient info
+            document.getElementById('patientName').textContent = data.patient_info.name;
+            document.getElementById('currentSeverity').textContent = data.patient_info.current_severity;
+            document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(data.generated_at).toLocaleTimeString();
+            
+            // Update risk indicator
+            const riskIndicator = document.getElementById('riskIndicator');
+            const riskLevel = document.getElementById('riskLevel');
+            const treatmentUrgency = document.getElementById('treatmentUrgency');
+            
+            riskIndicator.className = `status-indicator status-${data.real_time_summary.current_status.risk_level}`;
+            riskLevel.textContent = data.real_time_summary.current_status.risk_level.toUpperCase();
+            treatmentUrgency.textContent = data.real_time_summary.current_status.treatment_urgency;
+            
+            // Update key metrics
+            document.getElementById('moodCheckIns').textContent = data.real_time_summary.today_summary.mood_check_ins;
+            document.getElementById('exercisesCompleted').textContent = data.real_time_summary.today_summary.exercises_completed;
+            document.getElementById('exercisesSkipped').textContent = data.real_time_summary.today_summary.exercises_skipped;
+            document.getElementById('crisisEpisodes').textContent = data.crisis_management.crisis_episodes;
+            
+            // Display current status
+            displayCurrentStatus(data.real_time_summary.current_status);
+            
+            // Display weekly trends
+            displayWeeklyTrends(data.real_time_summary.weekly_trends);
+            
+            // Display today's concerns
+            displayTodayConcerns(data.real_time_summary.today_summary.concerns);
+            
+            // Display recommendations
+            displaySessionFocus(data.treatment_recommendations.session_focus);
+            displayTreatmentAdjustments(data.treatment_recommendations.treatment_adjustments);
+            displayImmediateActions(data.treatment_recommendations.immediate_actions);
+            
+            // Display session preparation
+            displayWeekOverview(data.session_preparation.week_overview);
+            displayTalkingPoints(data.session_preparation.talking_points);
+            
+            // Display crisis management
+            displaySafetyPlanning(data.crisis_management.safety_planning);
+            displayInterventionRecommendations(data.crisis_management.intervention_recommendations);
+            
+            // Display documentation
+            displayObjectiveMeasurements(data.treatment_documentation.objective_measurements);
+            displayProgressNotes(data.treatment_documentation.progress_notes);
+            displayOutcomeMeasurements(data.treatment_documentation.outcome_measurements);
+            
+            // Show content
+            document.getElementById('patientInfo').style.display = 'block';
+            document.getElementById('keyMetrics').style.display = 'block';
+        }
+
+        function displayCurrentStatus(status) {
+            const container = document.getElementById('currentStatus');
+            container.innerHTML = `
+                <div class="insight-card">
+                    <strong>Mood State:</strong> ${status.mood_state.replace('_', ' ').toUpperCase()}
+                </div>
+                <div class="insight-card">
+                    <strong>Treatment Urgency:</strong> ${status.treatment_urgency.toUpperCase()}
+                </div>
+            `;
+        }
+
+        function displayWeeklyTrends(trends) {
+            const container = document.getElementById('weeklyTrends');
+            container.innerHTML = `
+                <div class="insight-card">
+                    <strong>Mood Trend:</strong> ${trends.mood_trend.toUpperCase()}
+                </div>
+                <div class="insight-card">
+                    <strong>Overall Trend:</strong> ${trends.overall_trend.toUpperCase()}
+                </div>
+            `;
+        }
+
+        function displayTodayConcerns(concerns) {
+            const container = document.getElementById('todayConcerns');
+            if (concerns.length === 0) {
+                container.innerHTML = '<div class="insight-card">No concerns identified today</div>';
+            } else {
+                container.innerHTML = concerns.map(concern => 
+                    `<div class="concern-card"><i class="fas fa-exclamation-triangle"></i> ${concern}</div>`
+                ).join('');
+            }
+        }
+
+        function displaySessionFocus(focus) {
+            const container = document.getElementById('sessionFocus');
+            if (focus.length === 0) {
+                container.innerHTML = '<div class="insight-card">No specific focus areas identified</div>';
+            } else {
+                container.innerHTML = focus.map(item => 
+                    `<div class="recommendation-card"><i class="fas fa-bullseye"></i> ${item}</div>`
+                ).join('');
+            }
+        }
+
+        function displayTreatmentAdjustments(adjustments) {
+            const container = document.getElementById('treatmentAdjustments');
+            if (adjustments.length === 0) {
+                container.innerHTML = '<div class="insight-card">No treatment adjustments recommended</div>';
+            } else {
+                container.innerHTML = adjustments.map(item => 
+                    `<div class="recommendation-card"><i class="fas fa-cogs"></i> ${item}</div>`
+                ).join('');
+            }
+        }
+
+        function displayImmediateActions(actions) {
+            const container = document.getElementById('immediateActions');
+            if (actions.length === 0) {
+                container.innerHTML = '<div class="insight-card">No immediate actions required</div>';
+            } else {
+                container.innerHTML = actions.map(item => 
+                    `<div class="crisis-card"><i class="fas fa-bolt"></i> ${item}</div>`
+                ).join('');
+            }
+        }
+
+        function displayWeekOverview(overview) {
+            const container = document.getElementById('weekOverview');
+            container.innerHTML = `
+                <div class="insight-card">
+                    <strong>Mood Entries:</strong> ${overview.mood_entries}
+                </div>
+                <div class="insight-card">
+                    <strong>Exercises Completed:</strong> ${overview.exercises_completed} / ${overview.total_exercises}
+                </div>
+            `;
+        }
+
+        function displayTalkingPoints(points) {
+            const container = document.getElementById('talkingPoints');
+            if (points.length === 0) {
+                container.innerHTML = '<div class="insight-card">No specific talking points generated</div>';
+            } else {
+                container.innerHTML = points.map(point => 
+                    `<div class="talking-point"><i class="fas fa-comment"></i> ${point}</div>`
+                ).join('');
+            }
+        }
+
+        function displaySafetyPlanning(planning) {
+            const container = document.getElementById('safetyPlanning');
+            if (planning.length === 0) {
+                container.innerHTML = '<div class="insight-card">No safety planning updates needed</div>';
+            } else {
+                container.innerHTML = planning.map(item => 
+                    `<div class="recommendation-card"><i class="fas fa-shield-alt"></i> ${item}</div>`
+                ).join('');
+            }
+        }
+
+        function displayInterventionRecommendations(recommendations) {
+            const container = document.getElementById('interventionRecommendations');
+            if (recommendations.length === 0) {
+                container.innerHTML = '<div class="insight-card">No intervention changes recommended</div>';
+            } else {
+                container.innerHTML = recommendations.map(item => 
+                    `<div class="recommendation-card"><i class="fas fa-first-aid"></i> ${item}</div>`
+                ).join('');
+            }
+        }
+
+        function displayObjectiveMeasurements(measurements) {
+            const container = document.getElementById('objectiveMeasurements');
+            container.innerHTML = `
+                <div class="insight-card">
+                    <strong>Average Mood Level:</strong> ${measurements.avg_mood_level || 'No data'} / 10
+                </div>
+                <div class="insight-card">
+                    <strong>Exercise Completion Rate:</strong> ${(measurements.exercise_completion_rate * 100).toFixed(1)}%
+                </div>
+                <div class="insight-card">
+                    <strong>Total Sessions:</strong> ${measurements.total_sessions}
+                </div>
+            `;
+        }
+
+        function displayProgressNotes(notes) {
+            const container = document.getElementById('progressNotes');
+            if (notes.length === 0) {
+                container.innerHTML = '<div class="insight-card">No progress notes available</div>';
+            } else {
+                container.innerHTML = notes.map(note => 
+                    `<div class="insight-card"><i class="fas fa-clipboard-list"></i> ${note}</div>`
+                ).join('');
+            }
+        }
+
+        function displayOutcomeMeasurements(outcomes) {
+            const container = document.getElementById('outcomeMeasurements');
+            container.innerHTML = `
+                <div class="insight-card">
+                    <strong>Functional Improvement:</strong> ${outcomes.functional_improvement}
+                </div>
+                <div class="insight-card">
+                    <strong>Skill Acquisition:</strong> ${outcomes.skill_acquisition}
+                </div>
+                <div class="insight-card">
+                    <strong>Treatment Goal Progress:</strong> ${outcomes.treatment_goal_progress}
+                </div>
+            `;
+        }
+
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            spinner.style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.dashboard-container');
+            container.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadPatientInsights, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

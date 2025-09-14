@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Check-in - MindSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+            --info-color: #4299e1;
+            --light-bg: #f7fafc;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e2e8f0 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            border: none;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .mood-emoji-btn {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 50%;
+            font-size: 2.5rem;
+            margin: 10px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .mood-emoji-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .mood-emoji-btn.selected {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .mood-emoji-btn.selected:hover {
+            transform: scale(1.05);
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .slider-value {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .custom-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+        }
+
+        .custom-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-range::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .context-btn {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 12px 20px;
+            margin: 5px;
+            background: white;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .context-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .context-btn.selected {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .coping-btn {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin: 5px;
+            background: white;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .coping-btn:hover {
+            border-color: var(--success-color);
+            color: var(--success-color);
+            transform: translateY(-1px);
+        }
+
+        .coping-btn.selected {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--success-color) 0%, #38a169 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(72, 187, 120, 0.4);
+            color: white;
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .emergency-btn {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #e53e3e 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(245, 101, 101, 0.3);
+        }
+
+        .emergency-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 101, 101, 0.4);
+            color: white;
+        }
+
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .progress-step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #a0aec0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .progress-step.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .progress-line {
+            flex: 1;
+            height: 3px;
+            background: #e2e8f0;
+            margin: 18px 0;
+            border-radius: 2px;
+        }
+
+        .progress-line.active {
+            background: var(--primary-color);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .crisis-warning {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            border: 2px solid var(--danger-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .crisis-warning h5 {
+            color: var(--danger-color);
+            margin-bottom: 10px;
+        }
+
+        .floating-help {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--info-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 25px rgba(66, 153, 225, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-help:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(66, 153, 225, 0.6);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain me-2"></i>MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('smart_assessment.micro_assessment_dashboard') }}">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-heart me-2"></i>Quick Check-in
+                        </h3>
+                        <p class="mb-0 mt-2 opacity-75">Take a moment to check in with yourself</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Progress Indicator -->
+                        <div class="progress-indicator">
+                            <div class="progress-step active" id="step1">1</div>
+                            <div class="progress-line" id="line1"></div>
+                            <div class="progress-step" id="step2">2</div>
+                            <div class="progress-line" id="line2"></div>
+                            <div class="progress-step" id="step3">3</div>
+                        </div>
+
+                        <form method="POST" id="checkinForm">
+                            <!-- Step 1: Mood Assessment -->
+                            <div class="section active" id="section1">
+                                <h4 class="text-center mb-4">How are you feeling right now?</h4>
+                                
+                                <div class="text-center mb-4">
+                                    <button type="button" class="mood-emoji-btn" data-mood="1" data-emoji="😢">
+                                        😢
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="2" data-emoji="😕">
+                                        😕
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="3" data-emoji="😐">
+                                        😐
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="4" data-emoji="🙂">
+                                        🙂
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="5" data-emoji="😊">
+                                        😊
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="6" data-emoji="😄">
+                                        😄
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="7" data-emoji="🤗">
+                                        🤗
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="8" data-emoji="😍">
+                                        😍
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="9" data-emoji="🤩">
+                                        🤩
+                                    </button>
+                                    <button type="button" class="mood-emoji-btn" data-mood="10" data-emoji="🥰">
+                                        🥰
+                                    </button>
+                                </div>
+
+                                <input type="hidden" name="mood_rating" id="mood_rating" required>
+                                <input type="hidden" name="mood_emoji" id="mood_emoji" required>
+
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="nextStep()" id="nextBtn1" disabled>
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Energy and Stress -->
+                            <div class="section" id="section2">
+                                <h4 class="text-center mb-4">Energy and Stress Levels</h4>
+                                
+                                <div class="slider-container">
+                                    <div class="slider-label">
+                                        <span><i class="fas fa-battery-full me-2"></i>Energy Level</span>
+                                        <span class="slider-value" id="energyValue">5</span>
+                                    </div>
+                                    <input type="range" class="custom-range" id="energySlider" min="1" max="10" value="5" 
+                                           name="energy_level" oninput="updateSliderValue('energyValue', this.value)">
+                                    <div class="d-flex justify-content-between text-muted small">
+                                        <span>Very Low</span>
+                                        <span>Very High</span>
+                                    </div>
+                                </div>
+
+                                <div class="slider-container">
+                                    <div class="slider-label">
+                                        <span><i class="fas fa-exclamation-triangle me-2"></i>Stress Level</span>
+                                        <span class="slider-value" id="stressValue">5</span>
+                                    </div>
+                                    <input type="range" class="custom-range" id="stressSlider" min="1" max="10" value="5" 
+                                           name="stress_level" oninput="updateSliderValue('stressValue', this.value)">
+                                    <div class="d-flex justify-content-between text-muted small">
+                                        <span>Very Low</span>
+                                        <span>Very High</span>
+                                    </div>
+                                </div>
+
+                                <div class="text-center mt-4">
+                                    <button type="button" class="btn btn-secondary me-2" onclick="prevStep()">
+                                        <i class="fas fa-arrow-left me-2"></i>Back
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="nextStep()">
+                                        Next <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Context and Coping -->
+                            <div class="section" id="section3">
+                                <h4 class="text-center mb-4">Context & Coping</h4>
+                                
+                                <!-- Context Selection -->
+                                <div class="mb-4">
+                                    <h6><i class="fas fa-map-marker-alt me-2"></i>Where are you?</h6>
+                                    <div class="text-center">
+                                        <button type="button" class="context-btn" data-context="home">
+                                            <i class="fas fa-home me-2"></i>Home
+                                        </button>
+                                        <button type="button" class="context-btn" data-context="work">
+                                            <i class="fas fa-briefcase me-2"></i>Work
+                                        </button>
+                                        <button type="button" class="context-btn" data-context="social">
+                                            <i class="fas fa-users me-2"></i>Social
+                                        </button>
+                                        <button type="button" class="context-btn" data-context="outdoors">
+                                            <i class="fas fa-tree me-2"></i>Outdoors
+                                        </button>
+                                        <button type="button" class="context-btn" data-context="transit">
+                                            <i class="fas fa-car me-2"></i>Transit
+                                        </button>
+                                        <button type="button" class="context-btn" data-context="other">
+                                            <i class="fas fa-ellipsis-h me-2"></i>Other
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="location_type" id="location_type" required>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6><i class="fas fa-running me-2"></i>What are you doing?</h6>
+                                    <div class="text-center">
+                                        <button type="button" class="context-btn" data-activity="working">
+                                            <i class="fas fa-laptop me-2"></i>Working
+                                        </button>
+                                        <button type="button" class="context-btn" data-activity="relaxing">
+                                            <i class="fas fa-couch me-2"></i>Relaxing
+                                        </button>
+                                        <button type="button" class="context-btn" data-activity="socializing">
+                                            <i class="fas fa-comments me-2"></i>Socializing
+                                        </button>
+                                        <button type="button" class="context-btn" data-activity="exercising">
+                                            <i class="fas fa-dumbbell me-2"></i>Exercising
+                                        </button>
+                                        <button type="button" class="context-btn" data-activity="eating">
+                                            <i class="fas fa-utensils me-2"></i>Eating
+                                        </button>
+                                        <button type="button" class="context-btn" data-activity="other">
+                                            <i class="fas fa-ellipsis-h me-2"></i>Other
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="activity_type" id="activity_type" required>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6><i class="fas fa-users me-2"></i>Who are you with?</h6>
+                                    <div class="text-center">
+                                        <button type="button" class="context-btn" data-social="alone">
+                                            <i class="fas fa-user me-2"></i>Alone
+                                        </button>
+                                        <button type="button" class="context-btn" data-social="with_family">
+                                            <i class="fas fa-home me-2"></i>Family
+                                        </button>
+                                        <button type="button" class="context-btn" data-social="with_friends">
+                                            <i class="fas fa-user-friends me-2"></i>Friends
+                                        </button>
+                                        <button type="button" class="context-btn" data-social="with_colleagues">
+                                            <i class="fas fa-briefcase me-2"></i>Colleagues
+                                        </button>
+                                        <button type="button" class="context-btn" data-social="in_group">
+                                            <i class="fas fa-users me-2"></i>Group
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="social_situation" id="social_situation" required>
+                                </div>
+
+                                <!-- Coping Skills -->
+                                <div class="mb-4">
+                                    <h6><i class="fas fa-spa me-2"></i>Did you use any coping skills?</h6>
+                                    <div class="text-center">
+                                        <button type="button" class="coping-btn" data-coping="breathing">
+                                            <i class="fas fa-wind me-2"></i>Breathing
+                                        </button>
+                                        <button type="button" class="coping-btn" data-coping="mindfulness">
+                                            <i class="fas fa-om me-2"></i>Mindfulness
+                                        </button>
+                                        <button type="button" class="coping-btn" data-coping="exercise">
+                                            <i class="fas fa-running me-2"></i>Exercise
+                                        </button>
+                                        <button type="button" class="coping-btn" data-coping="journaling">
+                                            <i class="fas fa-pen me-2"></i>Journaling
+                                        </button>
+                                        <button type="button" class="coping-btn" data-coping="music">
+                                            <i class="fas fa-music me-2"></i>Music
+                                        </button>
+                                        <button type="button" class="coping-btn" data-coping="none">
+                                            <i class="fas fa-times me-2"></i>None
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="coping_skill_used" id="coping_skill_used">
+                                </div>
+
+                                <!-- Coping Effectiveness (if coping skill used) -->
+                                <div class="mb-4" id="copingEffectiveness" style="display: none;">
+                                    <h6><i class="fas fa-star me-2"></i>How effective was it?</h6>
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Effectiveness</span>
+                                            <span class="slider-value" id="effectivenessValue">5</span>
+                                        </div>
+                                        <input type="range" class="custom-range" id="effectivenessSlider" min="1" max="10" value="5" 
+                                               name="coping_effectiveness" oninput="updateSliderValue('effectivenessValue', this.value)">
+                                        <div class="d-flex justify-content-between text-muted small">
+                                            <span>Not Helpful</span>
+                                            <span>Very Helpful</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Crisis Assessment -->
+                                <div class="crisis-warning" id="crisisWarning" style="display: none;">
+                                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Are you in crisis?</h5>
+                                    <p class="mb-3">If you're having thoughts of self-harm or need immediate support, please reach out for help.</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-outline-danger" onclick="setCrisisLevel('high')">
+                                            I need support
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setCrisisLevel('low')">
+                                            I'm okay
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="crisis_risk_level" id="crisis_risk_level" value="low">
+                                    <input type="hidden" name="needs_immediate_support" id="needs_immediate_support" value="false">
+                                </div>
+
+                                <div class="text-center mt-4">
+                                    <button type="button" class="btn btn-secondary me-2" onclick="prevStep()">
+                                        <i class="fas fa-arrow-left me-2"></i>Back
+                                    </button>
+                                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                                        <i class="fas fa-check me-2"></i>Complete Check-in
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Help Button -->
+    <button class="floating-help" onclick="showHelp()" title="Need help?">
+        <i class="fas fa-question"></i>
+    </button>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle me-2"></i>Check-in Help
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>How to complete your check-in:</h6>
+                    <ol>
+                        <li><strong>Mood:</strong> Select the emoji that best represents how you're feeling</li>
+                        <li><strong>Energy & Stress:</strong> Use the sliders to rate your current levels</li>
+                        <li><strong>Context:</strong> Tell us about your situation and environment</li>
+                        <li><strong>Coping:</strong> Share if you used any strategies to help yourself</li>
+                    </ol>
+                    <p class="mb-0"><strong>Remember:</strong> This is a safe space. Be honest with yourself.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        // Mood selection
+        document.querySelectorAll('.mood-emoji-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.mood-emoji-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                const mood = this.dataset.mood;
+                const emoji = this.dataset.emoji;
+                
+                document.getElementById('mood_rating').value = mood;
+                document.getElementById('mood_emoji').value = emoji;
+                
+                document.getElementById('nextBtn1').disabled = false;
+                
+                // Check for crisis indicators
+                if (mood <= 3) {
+                    document.getElementById('crisisWarning').style.display = 'block';
+                } else {
+                    document.getElementById('crisisWarning').style.display = 'none';
+                }
+            });
+        });
+
+        // Context selection
+        document.querySelectorAll('.context-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const type = this.dataset.context || this.dataset.activity || this.dataset.social;
+                const field = this.dataset.context ? 'location_type' : 
+                             this.dataset.activity ? 'activity_type' : 'social_situation';
+                
+                // Remove selection from same group
+                this.parentElement.querySelectorAll('.context-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                document.getElementById(field).value = type;
+                checkFormCompletion();
+            });
+        });
+
+        // Coping selection
+        document.querySelectorAll('.coping-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.coping-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                const coping = this.dataset.coping;
+                document.getElementById('coping_skill_used').value = coping;
+                
+                if (coping !== 'none') {
+                    document.getElementById('copingEffectiveness').style.display = 'block';
+                } else {
+                    document.getElementById('copingEffectiveness').style.display = 'none';
+                }
+                
+                checkFormCompletion();
+            });
+        });
+
+        function updateSliderValue(elementId, value) {
+            document.getElementById(elementId).textContent = value;
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                document.getElementById(`section${currentStep}`).classList.remove('active');
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                document.getElementById(`step${currentStep}`).classList.add('completed');
+                
+                if (currentStep < totalSteps - 1) {
+                    document.getElementById(`line${currentStep}`).classList.add('active');
+                }
+                
+                currentStep++;
+                document.getElementById(`section${currentStep}`).classList.add('active');
+                document.getElementById(`step${currentStep}`).classList.add('active');
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById(`section${currentStep}`).classList.remove('active');
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                
+                if (currentStep < totalSteps) {
+                    document.getElementById(`step${currentStep}`).classList.remove('completed');
+                }
+                
+                currentStep--;
+                document.getElementById(`section${currentStep}`).classList.add('active');
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                if (currentStep < totalSteps - 1) {
+                    document.getElementById(`line${currentStep}`).classList.remove('active');
+                }
+            }
+        }
+
+        function checkFormCompletion() {
+            const requiredFields = ['location_type', 'activity_type', 'social_situation'];
+            const allFilled = requiredFields.every(field => document.getElementById(field).value);
+            
+            document.getElementById('submitBtn').disabled = !allFilled;
+        }
+
+        function setCrisisLevel(level) {
+            document.getElementById('crisis_risk_level').value = level;
+            document.getElementById('needs_immediate_support').value = (level === 'high').toString();
+            
+            if (level === 'high') {
+                alert('If you\'re in crisis, please call 988 or text HOME to 741741 for immediate support.');
+            }
+        }
+
+        function showHelp() {
+            new bootstrap.Modal(document.getElementById('helpModal')).show();
+        }
+
+        // Auto-submit timer (optional - for engagement)
+        let autoSubmitTimer;
+        function startAutoSubmitTimer() {
+            autoSubmitTimer = setTimeout(() => {
+                if (confirm('Would you like to complete your check-in? You can always come back later.')) {
+                    document.getElementById('checkinForm').submit();
+                }
+            }, 300000); // 5 minutes
+        }
+
+        // Start timer when page loads
+        startAutoSubmitTimer();
+
+        // Reset timer on any interaction
+        document.addEventListener('click', () => {
+            clearTimeout(autoSubmitTimer);
+            startAutoSubmitTimer();
+        });
+    </script>
+</body>
+</html>
