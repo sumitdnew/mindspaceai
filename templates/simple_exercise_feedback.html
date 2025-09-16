@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Feedback - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .patient-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .patient-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .exercise-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: #f8f9fa;
+        }
+        .severity-badge {
+            font-size: 0.8em;
+            padding: 0.25em 0.5em;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+        }
+        .nav-link:hover {
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/provider_dashboard_basic">
+                <i class="fas fa-brain"></i> MindSpace ML
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/provider_dashboard_basic">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/provider/simple_exercise_feedback">
+                            <i class="fas fa-brain"></i> Exercise Feedback
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/provider_analytics_dashboard">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-md"></i> Provider
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/provider_dashboard_basic">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="/provider/simple_exercise_feedback">Exercise Feedback</a></li>
+                            <li><a class="dropdown-item" href="/provider_analytics_dashboard">Analytics</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 bg-light p-3">
+                <h4><i class="fas fa-brain"></i> Exercise Feedback</h4>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Select Patient:</label>
+                    <select class="form-select" id="patientSelect">
+                        <option value="">Choose a patient...</option>
+                    </select>
+                </div>
+                <div id="patientInfo" style="display: none;">
+                    <h6>Patient Details</h6>
+                    <p><strong>Name:</strong> <span id="patientName"></span></p>
+                    <p><strong>Age:</strong> <span id="patientAge"></span></p>
+                    <p><strong>PHQ-9 Score:</strong> <span id="phq9Score"></span></p>
+                    <p><strong>Severity:</strong> <span id="severity" class="badge"></span></p>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 p-3">
+                <h4><i class="fas fa-dumbbell"></i> Exercise Recommendations</h4>
+                <div id="recommendations" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Daily Exercises</h6>
+                            <div id="dailyExercises"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Weekly Exercises</h6>
+                            <div id="weeklyExercises"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback History Section -->
+                    <div class="mt-4">
+                        <h6><i class="fas fa-history"></i> Recent Feedback History</h6>
+                        <div id="feedbackHistory" class="card">
+                            <div class="card-body">
+                                <div id="feedbackHistoryContent">
+                                    <p class="text-muted">No feedback submitted yet for this patient</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="noData" class="text-center text-muted">
+                    <i class="fas fa-user-md fa-3x mb-3"></i>
+                    <p>Select a patient to view exercise recommendations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let patients = [];
+        let currentPatient = null;
+
+        // Load patients on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPatients();
+        });
+
+        // Load patients from API
+        async function loadPatients() {
+            try {
+                console.log('Loading patients...');
+                const response = await fetch('/provider/api/patients');
+                const data = await response.json();
+                
+                if (data.patients) {
+                    patients = data.patients;
+                    populatePatientSelect();
+                    console.log('Loaded', patients.length, 'patients');
+                } else {
+                    console.error('No patients data received');
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+            }
+        }
+
+        // Populate patient dropdown
+        function populatePatientSelect() {
+            const select = document.getElementById('patientSelect');
+            select.innerHTML = '<option value="">Choose a patient...</option>';
+            
+            patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.first_name} ${patient.last_name} (${patient.current_phq9_severity})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Handle patient selection
+        document.getElementById('patientSelect').addEventListener('change', function() {
+            const patientId = this.value;
+            if (patientId) {
+                loadPatientRecommendations(patientId);
+            } else {
+                hidePatientInfo();
+            }
+        });
+
+        // Load patient recommendations
+        async function loadPatientRecommendations(patientId) {
+            try {
+                console.log('Loading recommendations for patient:', patientId);
+                
+                // Find patient data
+                const patient = patients.find(p => p.id == patientId);
+                if (!patient) {
+                    console.error('Patient not found');
+                    return;
+                }
+
+                // Show patient info
+                showPatientInfo(patient);
+
+                // Generate mock recommendations based on PHQ-9 severity
+                const recommendations = generateRecommendations(patient.current_phq9_severity);
+                displayRecommendations(recommendations);
+                
+                // Load feedback history
+                loadFeedbackHistory(patientId);
+
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+
+        // Show patient information
+        function showPatientInfo(patient) {
+            currentPatient = patient;
+            document.getElementById('patientName').textContent = `${patient.first_name} ${patient.last_name}`;
+            document.getElementById('patientAge').textContent = patient.age;
+            document.getElementById('phq9Score').textContent = patient.current_phq9_score || 'N/A';
+            
+            const severity = patient.current_phq9_severity || 'unknown';
+            const severityElement = document.getElementById('severity');
+            severityElement.textContent = severity;
+            severityElement.className = `badge severity-badge bg-${getSeverityColor(severity)}`;
+            
+            document.getElementById('patientInfo').style.display = 'block';
+            document.getElementById('recommendations').style.display = 'block';
+            document.getElementById('noData').style.display = 'none';
+        }
+
+        // Hide patient information
+        function hidePatientInfo() {
+            currentPatient = null;
+            document.getElementById('patientInfo').style.display = 'none';
+            document.getElementById('recommendations').style.display = 'none';
+            document.getElementById('noData').style.display = 'block';
+        }
+
+        // Generate recommendations based on PHQ-9 severity
+        function generateRecommendations(severity) {
+            const recommendations = {
+                daily: [],
+                weekly: []
+            };
+
+            switch (severity) {
+                case 'minimal':
+                    recommendations.daily = [
+                        { name: 'Mood Check-in', duration: '5 min', description: 'Daily mood tracking and awareness' },
+                        { name: 'Gratitude Practice', duration: '3 min', description: 'Write down three things you\'re grateful for' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Wellness Walk', duration: '20 min', description: 'Gentle outdoor activity' },
+                        { name: 'Mindfulness Meditation', duration: '15 min', description: 'Guided breathing exercise' }
+                    ];
+                    break;
+                case 'mild':
+                    recommendations.daily = [
+                        { name: 'Mood Check-in', duration: '5 min', description: 'Daily mood tracking and awareness' },
+                        { name: 'Positive Affirmations', duration: '5 min', description: 'Repeat positive self-statements' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Gentle Exercise', duration: '30 min', description: 'Light physical activity' },
+                        { name: 'Social Connection', duration: '20 min', description: 'Call a friend or family member' }
+                    ];
+                    break;
+                case 'moderate':
+                    recommendations.daily = [
+                        { name: 'Mood Check-in', duration: '5 min', description: 'Daily mood tracking and awareness' },
+                        { name: 'Breathing Exercise', duration: '10 min', description: 'Deep breathing and relaxation' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Structured Exercise', duration: '45 min', description: 'Moderate physical activity' },
+                        { name: 'Cognitive Behavioral Exercise', duration: '30 min', description: 'Thought challenging worksheet' }
+                    ];
+                    break;
+                case 'moderately_severe':
+                    recommendations.daily = [
+                        { name: 'Mood Check-in', duration: '5 min', description: 'Daily mood tracking and awareness' },
+                        { name: 'Grounding Exercise', duration: '10 min', description: '5-4-3-2-1 sensory technique' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Therapeutic Exercise', duration: '60 min', description: 'Structured physical activity' },
+                        { name: 'Professional Support', duration: '50 min', description: 'Therapy session or support group' }
+                    ];
+                    break;
+                case 'severe':
+                    recommendations.daily = [
+                        { name: 'Crisis Check-in', duration: '5 min', description: 'Safety and mood assessment' },
+                        { name: 'Basic Self-Care', duration: '15 min', description: 'Essential daily activities' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Intensive Support', duration: '90 min', description: 'Professional therapy session' },
+                        { name: 'Medical Follow-up', duration: '30 min', description: 'Check-in with healthcare provider' }
+                    ];
+                    break;
+                default:
+                    recommendations.daily = [
+                        { name: 'General Wellness', duration: '10 min', description: 'Basic self-care activities' }
+                    ];
+                    recommendations.weekly = [
+                        { name: 'Health Check-in', duration: '30 min', description: 'General wellness assessment' }
+                    ];
+            }
+
+            return recommendations;
+        }
+
+        // Display recommendations
+        function displayRecommendations(recommendations) {
+            const dailyContainer = document.getElementById('dailyExercises');
+            const weeklyContainer = document.getElementById('weeklyExercises');
+            
+            dailyContainer.innerHTML = '';
+            weeklyContainer.innerHTML = '';
+
+            recommendations.daily.forEach(exercise => {
+                const card = createExerciseCard(exercise, 'daily');
+                dailyContainer.appendChild(card);
+            });
+
+            recommendations.weekly.forEach(exercise => {
+                const card = createExerciseCard(exercise, 'weekly');
+                weeklyContainer.appendChild(card);
+            });
+        }
+
+        // Create exercise card
+        function createExerciseCard(exercise, type) {
+            const card = document.createElement('div');
+            card.className = 'exercise-card';
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">${exercise.name}</h6>
+                        <p class="text-muted mb-1">${exercise.description}</p>
+                        <small class="text-info"><i class="fas fa-clock"></i> ${exercise.duration}</small>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-success" onclick="provideFeedback('${exercise.name}', 'approve', '${type}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="provideFeedback('${exercise.name}', 'reject', '${type}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="provideFeedback('${exercise.name}', 'modify', '${type}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Provide feedback
+        async function provideFeedback(exerciseName, action, type) {
+            console.log(`Feedback: ${action} ${exerciseName} (${type})`);
+            
+            if (!currentPatient) {
+                showMessage('Please select a patient first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/provider/api/submit_feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_id: currentPatient.id,
+                        exercise_name: exerciseName,
+                        action: action,
+                        exercise_type: type,
+                        feedback_text: `Provider ${action}ed ${exerciseName} exercise`,
+                        clinical_rationale: `Based on PHQ-9 severity: ${currentPatient.current_phq9_severity}`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`✅ ${data.message}`, 'success');
+                    // Update the button to show it was submitted
+                    updateFeedbackButton(exerciseName, action);
+                    // Refresh feedback history
+                    loadFeedbackHistory(currentPatient.id);
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting feedback:', error);
+                showMessage(`❌ Error submitting feedback: ${error.message}`, 'error');
+            }
+        }
+        
+        // Show inline message
+        function showMessage(message, type) {
+            // Remove any existing messages
+            const existingMessage = document.getElementById('feedback-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // Create new message
+            const messageDiv = document.createElement('div');
+            messageDiv.id = 'feedback-message';
+            messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+            messageDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert at the top of the recommendations section
+            const recommendationsDiv = document.getElementById('recommendations');
+            recommendationsDiv.insertBefore(messageDiv, recommendationsDiv.firstChild);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 3000);
+        }
+        
+        // Update feedback button to show it was submitted
+        function updateFeedbackButton(exerciseName, action) {
+            // Find all buttons for this exercise and update the clicked one
+            const buttons = document.querySelectorAll(`button[onclick*="${exerciseName}"]`);
+            buttons.forEach(button => {
+                if (button.onclick.toString().includes(action)) {
+                    button.disabled = true;
+                    button.innerHTML = `<i class="fas fa-check"></i> ${action}d`;
+                    button.className = button.className.replace('btn-outline-', 'btn-');
+                }
+            });
+        }
+        
+        // Load feedback history for the current patient
+        async function loadFeedbackHistory(patientId) {
+            try {
+                const response = await fetch(`/provider/api/feedback_history/${patientId}`);
+                const data = await response.json();
+                
+                if (data.feedback_history) {
+                    displayFeedbackHistory(data.feedback_history);
+                } else {
+                    console.error('No feedback history data received');
+                }
+            } catch (error) {
+                console.error('Error loading feedback history:', error);
+            }
+        }
+        
+        // Display feedback history
+        function displayFeedbackHistory(feedbackHistory) {
+            const container = document.getElementById('feedbackHistoryContent');
+            
+            if (feedbackHistory.length === 0) {
+                container.innerHTML = '<p class="text-muted">No feedback submitted yet for this patient</p>';
+                return;
+            }
+            
+            let html = '<div class="list-group list-group-flush">';
+            feedbackHistory.forEach(feedback => {
+                const actionColor = feedback.action === 'approve' ? 'success' : 
+                                  feedback.action === 'reject' ? 'danger' : 'warning';
+                const actionIcon = feedback.action === 'approve' ? 'check' : 
+                                 feedback.action === 'reject' ? 'times' : 'edit';
+                
+                html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">${feedback.exercise_name}</div>
+                            <small class="text-muted">${feedback.feedback_text}</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-${actionColor} me-2">
+                                <i class="fas fa-${actionIcon}"></i> ${feedback.action}
+                            </span>
+                            <small class="text-muted">${new Date(feedback.submitted_at).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // Get severity color
+        function getSeverityColor(severity) {
+            const colors = {
+                'minimal': 'success',
+                'mild': 'warning',
+                'moderate': 'info',
+                'moderately_severe': 'danger',
+                'severe': 'dark'
+            };
+            return colors[severity] || 'secondary';
+        }
+    </script>
+</body>
+</html>

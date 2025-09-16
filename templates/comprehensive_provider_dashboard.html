@@ -103,14 +103,25 @@
         
         .nav-tabs .nav-link {
             border: none;
-            color: #667eea;
-            font-weight: 600;
+            color: #2c3e50;
+            font-weight: 700;
             padding: 15px 25px;
+            background: rgba(255,255,255,0.8);
+            margin-right: 5px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #1a252f;
+            background: rgba(255,255,255,0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .nav-tabs .nav-link.active {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
         .progress-ring {
@@ -143,6 +154,15 @@
                 </a>
                 <a class="nav-link" href="/provider/comprehensive_dashboard">
                     <i class="fas fa-chart-line"></i> Comprehensive Dashboard
+                </a>
+                <a class="nav-link" href="/provider/simple_exercise_feedback">
+                    <i class="fas fa-brain"></i> Exercise Feedback
+                </a>
+                <a class="nav-link" href="/provider_analytics_dashboard">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a class="nav-link" href="/provider/ai_briefing_test">
+                    <i class="fas fa-robot"></i> AI Briefing Test
                 </a>
                 <a class="nav-link" href="/logout">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -290,6 +310,21 @@
                 </div>
 
                 <div id="sessionPrepContent" style="display: none;">
+                    <!-- AI Intelligence Briefing -->
+                    <div class="dashboard-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="fas fa-robot"></i> AI Pre-Session Intelligence Briefing</h4>
+                            <button class="btn btn-primary" onclick="generateAIBriefing()">
+                                <i class="fas fa-brain"></i> Generate AI Briefing
+                            </button>
+                        </div>
+                        <div id="aiBriefingContent">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Select a patient and click "Generate AI Briefing" to get AI-powered insights about their recent exercise activity and progress.
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Key Developments -->
                     <div class="dashboard-card">
                         <h4><i class="fas fa-lightbulb"></i> Key Developments Since Last Session</h4>
@@ -638,6 +673,176 @@
                     <br><small class="text-muted">Impact: ${highlight.impact}</small>
                 `;
                 container.appendChild(highlightDiv);
+            });
+        }
+
+        // Generate AI briefing
+        async function generateAIBriefing() {
+            if (!selectedPatientId) {
+                alert('Please select a patient first');
+                return;
+            }
+            
+            const briefingContent = document.getElementById('aiBriefingContent');
+            briefingContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating AI briefing...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`/provider/api/session_briefing/${selectedPatientId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAIBriefing(data);
+                } else {
+                    briefingContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Error: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error generating AI briefing:', error);
+                briefingContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error generating briefing: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function displayAIBriefing(data) {
+            const briefingContent = document.getElementById('aiBriefingContent');
+            
+            const alertClass = data.is_mock ? 'alert-warning' : 'alert-success';
+            const alertIcon = data.is_mock ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
+            const alertText = data.is_mock ? 'Mock Briefing generated' : 'AI Briefing generated';
+            
+            let html = `
+                <div class="alert ${alertClass} mb-3">
+                    <i class="${alertIcon}"></i> ${alertText} for <strong>${data.patient_name}</strong>
+                    <br><small>Based on ${data.data_summary.exercise_sessions_count} exercise sessions, ${data.data_summary.mood_entries_count} mood entries, and ${data.data_summary.thought_records_count} thought records</small>
+                    ${data.is_mock ? '<br><small class="text-muted">Note: This is a fallback briefing. Configure OpenAI API key for full AI analysis.</small>' : ''}
+                </div>
+            `;
+            
+            // Display key insights if available
+            if (data.key_insights && data.key_insights.length > 0) {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Key Insights</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                ${data.key_insights.map(insight => `<li>${insight}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Display recommendations if available
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-target"></i> Recommendations</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Display structured sections if available
+            if (data.sections && Object.keys(data.sections).length > 0) {
+                Object.entries(data.sections).forEach(([sectionName, content]) => {
+                    if (content && content.trim()) {
+                        const sectionIcon = getSectionIcon(sectionName);
+                        html += `
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="${sectionIcon}"></i> ${sectionName}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div style="white-space: pre-line;">${content}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            } else if (data.briefing_text) {
+                // Fallback to full text display
+                html += `
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="white-space: pre-line;">${data.briefing_text}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add action buttons
+            html += `
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="generateAIBriefing()">
+                        <i class="fas fa-refresh"></i> Regenerate Briefing
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="copyBriefingToClipboard()">
+                        <i class="fas fa-copy"></i> Copy to Clipboard
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="downloadBriefing()">
+                        <i class="fas fa-download"></i> Download PDF
+                    </button>
+                </div>
+            `;
+            
+            briefingContent.innerHTML = html;
+        }
+        
+        function getSectionIcon(sectionName) {
+            const icons = {
+                'Executive Summary': 'fas fa-chart-line',
+                'Mood & Emotional Patterns': 'fas fa-heart',
+                'Exercise Engagement Analysis': 'fas fa-dumbbell',
+                'Cognitive Work Progress': 'fas fa-brain',
+                'Crisis & Safety Assessment': 'fas fa-exclamation-triangle',
+                'Treatment Progress': 'fas fa-chart-bar',
+                'Session Focus Recommendations': 'fas fa-target',
+                'Clinical Insights': 'fas fa-microscope'
+            };
+            return icons[sectionName] || 'fas fa-file-alt';
+        }
+        
+        function downloadBriefing() {
+            const briefingText = document.getElementById('aiBriefingContent').innerText;
+            const blob = new Blob([briefingText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `session_briefing_patient_${selectedPatientId}_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function copyBriefingToClipboard() {
+            const briefingText = document.getElementById('aiBriefingContent').innerText;
+            navigator.clipboard.writeText(briefingText).then(() => {
+                alert('Briefing copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy briefing');
             });
         }
 

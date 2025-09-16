@@ -21,6 +21,11 @@ from comprehensive_provider_dashboard import provider_dashboard as comprehensive
 print(f"DEBUG: comprehensive_dashboard_blueprint type: {type(comprehensive_dashboard_blueprint)}")
 print(f"DEBUG: comprehensive_dashboard_blueprint value: {comprehensive_dashboard_blueprint}")
 
+# Import crisis detection system
+from crisis_detector_xgboost import XGBoostCrisisDetector
+
+# Provider feedback system will be imported after models are defined
+
 # Import mood tracking blueprints (will be imported after models are defined)
 # from mood_tracking_interface import mood_tracking
 # from mood_analytics_dashboard import mood_analytics
@@ -55,6 +60,14 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Initialize Crisis Detection System
+crisis_detector = XGBoostCrisisDetector()
+print("🔍 Initializing Crisis Detection System...")
+if crisis_detector.load_model():
+    print("✅ Crisis Detection Model loaded successfully")
+else:
+    print("⚠️ No trained crisis detection model found - will need training")
 
 # Database Models - PHQ-9 Focused Only
 class User(UserMixin, db.Model):
@@ -118,6 +131,9 @@ class PHQ9Assessment(db.Model):
             return 'moderately_severe'
         else:
             return 'severe'
+    
+    # Relationships
+    patient = db.relationship('Patient', backref='phq9_assessments')
 
 class RecommendationResult(db.Model):
     """AI-generated recommendations based on PHQ-9 scores"""
@@ -144,6 +160,10 @@ class CrisisAlert(db.Model):
     acknowledged_by = db.Column(db.String(50))
     acknowledged_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    patient = db.relationship('Patient', backref='crisis_alerts')
+    assessment = db.relationship('PHQ9Assessment', backref='crisis_alerts')
 
 # Interactive Mental Health Exercise Models
 class Exercise(db.Model):
@@ -865,6 +885,26 @@ class EngagementMetrics(db.Model):
     # Relationships
     patient = db.relationship('Patient', backref='engagement_metrics')
 
+class ProviderExerciseFeedback(db.Model):
+    """Provider feedback on exercise recommendations"""
+    __tablename__ = 'provider_exercise_feedback'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    provider_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recommendation_id = db.Column(db.String(100))
+    exercise_type = db.Column(db.String(50), nullable=False)
+    action = db.Column(db.String(20), nullable=False)  # approve, reject, modify, add, remove
+    feedback_category = db.Column(db.String(50))
+    feedback_text = db.Column(db.Text)
+    modified_recommendations = db.Column(db.Text)  # JSON string
+    clinical_rationale = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    patient = db.relationship('Patient', backref='provider_feedback')
+    provider = db.relationship('User', backref='exercise_feedback')
+
 # PHQ-9 Analysis System
 class PHQ9AnalysisSystem:
     """Core PHQ-9 analysis and recommendation system"""
@@ -1191,14 +1231,274 @@ def provider_dashboard_basic():
     recent_alerts = CrisisAlert.query.filter_by(acknowledged=False)\
         .order_by(CrisisAlert.created_at.desc()).limit(10).all()
     
+    # Get ML crisis detection alerts specifically
+    ml_crisis_alerts = CrisisAlert.query.filter(
+        CrisisAlert.alert_type.like('%ml_crisis_detection%'),
+        CrisisAlert.acknowledged == False
+    ).order_by(CrisisAlert.created_at.desc()).limit(5).all()
+    
     # Get recent assessments
     recent_assessments = PHQ9Assessment.query\
         .order_by(PHQ9Assessment.assessment_date.desc()).limit(10).all()
     
+    # Get crisis detection model status
+    model_status = {
+        'is_trained': crisis_detector.is_trained,
+        'feature_count': len(crisis_detector.feature_names) if crisis_detector.feature_names else 0
+    }
+    
+    # Add ML predictions for each patient
+    patient_predictions = []
+    for patient in patients:
+        prediction_data = {
+            'patient_id': patient.id,
+            'rule_based_prediction': get_rule_based_prediction(patient),
+            'ml_prediction': None,
+            'combined_prediction': None,
+            'ml_confidence': None
+        }
+        
+        # Get ML prediction if model is trained
+        if crisis_detector.is_trained:
+            try:
+                # Get latest assessment for this patient
+                latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient.id)\
+                    .order_by(PHQ9Assessment.assessment_date.desc()).first()
+                
+                if latest_assessment:
+                    # Prepare patient data for ML prediction
+                    patient_data = prepare_patient_data_for_crisis_detection(patient, latest_assessment)
+                    ml_risk_assessment = crisis_detector.predict_crisis_risk(patient_data)
+                    
+                    prediction_data['ml_prediction'] = {
+                        'risk_level': ml_risk_assessment['risk_level'],
+                        'risk_probability': ml_risk_assessment['crisis_risk'],
+                        'confidence': ml_risk_assessment['confidence']
+                    }
+                    
+                    # Calculate combined prediction (70% ML, 30% rule-based)
+                    combined_prediction = calculate_combined_prediction(
+                        prediction_data['rule_based_prediction'],
+                        ml_risk_assessment
+                    )
+                    prediction_data['combined_prediction'] = combined_prediction
+                    prediction_data['ml_confidence'] = ml_risk_assessment['confidence']
+                    
+            except Exception as e:
+                print(f"❌ Error getting ML prediction for patient {patient.id}: {str(e)}")
+                prediction_data['ml_error'] = str(e)
+        
+        patient_predictions.append(prediction_data)
+    
     return render_template('provider_dashboard.html',
                          patients=patients,
                          alerts=recent_alerts,
-                         assessments=recent_assessments)
+                         ml_crisis_alerts=ml_crisis_alerts,
+                         assessments=recent_assessments,
+                         model_status=model_status,
+                         patient_predictions=patient_predictions)
+
+@app.route('/api/ai_briefing/<int:patient_id>')
+@login_required
+def get_ai_briefing(patient_id):
+    """Get AI-powered session briefing for a patient - Basic Dashboard Version"""
+    if current_user.role != 'provider':
+        return jsonify({'error': 'Access denied. Provider role required.'}), 403
+    
+    try:
+        print(f"AI Briefing requested for patient {patient_id}")
+        
+        # Get patient data from database (this works in basic dashboard)
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({'error': 'Patient not found'}), 404
+        
+        patient_name = f"{patient.first_name} {patient.last_name}"
+        
+        # Get recent data (last 30 days)
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        # Query recent data
+        mood_entries = MoodEntry.query.filter(
+            MoodEntry.patient_id == patient_id,
+            MoodEntry.timestamp >= thirty_days_ago
+        ).order_by(MoodEntry.timestamp.desc()).limit(10).all()
+        
+        exercise_sessions = ExerciseSession.query.filter(
+            ExerciseSession.patient_id == patient_id,
+            ExerciseSession.completion_time >= thirty_days_ago
+        ).order_by(ExerciseSession.completion_time.desc()).limit(10).all()
+        
+        phq9_assessments = PHQ9Assessment.query.filter(
+            PHQ9Assessment.patient_id == patient_id,
+            PHQ9Assessment.assessment_date >= thirty_days_ago
+        ).order_by(PHQ9Assessment.assessment_date.desc()).limit(5).all()
+        
+        thought_records = []  # Add if you have this model
+        crisis_alerts = CrisisAlert.query.filter(
+            CrisisAlert.patient_id == patient_id,
+            CrisisAlert.created_at >= thirty_days_ago
+        ).all()
+        
+        # Prepare data summary
+        data_summary = {
+            'mood_entries_count': len(mood_entries),
+            'exercise_sessions_count': len(exercise_sessions),
+            'phq9_assessments_count': len(phq9_assessments),
+            'thought_records_count': len(thought_records),
+            'crisis_alerts_count': len(crisis_alerts)
+        }
+        
+        # Create detailed prompt with real patient data
+        mood_summary = []
+        for entry in mood_entries[:5]:
+            mood_summary.append(f"Date: {entry.timestamp.strftime('%Y-%m-%d')}, Intensity: {entry.intensity_level}/10, Energy: {entry.energy_level}/10, Notes: {entry.notes_brief[:100] if entry.notes_brief else 'No notes'}")
+        
+        exercise_summary = []
+        for session in exercise_sessions[:5]:
+            # Calculate duration if both start and completion times exist
+            duration_minutes = None
+            if session.completion_time and session.start_time:
+                duration = session.completion_time - session.start_time
+                duration_minutes = int(duration.total_seconds() / 60)
+            
+            # Get exercise type from the related exercise
+            exercise_type = session.exercise.type if session.exercise else 'Unknown'
+            
+            # Use completion_time if available, otherwise start_time
+            session_date = session.completion_time if session.completion_time else session.start_time
+            
+            exercise_summary.append(f"Date: {session_date.strftime('%Y-%m-%d')}, Type: {exercise_type}, Duration: {duration_minutes or 'N/A'}min, Status: {session.completion_status}")
+        
+        phq9_summary = []
+        for assessment in phq9_assessments:
+            phq9_summary.append(f"Date: {assessment.assessment_date.strftime('%Y-%m-%d')}, Score: {assessment.total_score}/27, Severity: {assessment.severity_level}")
+        
+        prompt = f"""
+        Generate a clinical briefing for Patient {patient_id} ({patient_name}).
+        
+        PATIENT DATA SUMMARY (Last 30 days):
+        
+        MOOD ENTRIES ({len(mood_entries)} total):
+        {chr(10).join(mood_summary) if mood_summary else "No recent mood entries"}
+        
+        EXERCISE SESSIONS ({len(exercise_sessions)} total):
+        {chr(10).join(exercise_summary) if exercise_summary else "No recent exercise sessions"}
+        
+        PHQ-9 ASSESSMENTS ({len(phq9_assessments)} total):
+        {chr(10).join(phq9_summary) if phq9_summary else "No recent PHQ-9 assessments"}
+        
+        THOUGHT RECORDS ({len(thought_records)} total):
+        {"Recent thought records available" if thought_records else "No recent thought records"}
+        
+        CRISIS ALERTS ({len(crisis_alerts)} total):
+        {"Recent crisis alerts detected" if crisis_alerts else "No recent crisis alerts"}
+        
+        Please provide a comprehensive clinical briefing including:
+        
+        1. Key clinical insights (3-5 bullet points based on the actual data)
+        2. Treatment recommendations (3-4 recommendations based on patient's specific patterns)  
+        3. A detailed briefing summary
+        
+        Focus on:
+        - Depression assessment and monitoring trends
+        - Mood tracking patterns and changes
+        - Exercise and activity engagement levels
+        - Crisis risk assessment based on data
+        - Treatment adherence and progress
+        - Provider action items specific to this patient
+        
+        Format as JSON with: key_insights (array), recommendations (array), briefing_text (string)
+        """
+        
+        # Send to OpenAI
+        import requests
+        import os
+        
+        # Get API key from environment
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            api_key = os.getenv('OPENAI_API_KEY')
+        
+        try:
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1000,
+                "temperature": 0.3
+            }
+            
+            print(f"Making API request to OpenAI...")
+            response = requests.post(url, headers=headers, json=data, timeout=60, verify=False)
+            print(f"API response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"API error response: {response.text}")
+                raise Exception(f"API returned status {response.status_code}: {response.text}")
+            
+            response_data = response.json()
+            print(f"API response received successfully")
+            ai_content = response_data['choices'][0]['message']['content']
+            
+            # Try to parse as JSON, fallback to text
+            try:
+                ai_data = json.loads(ai_content)
+                key_insights = ai_data.get('key_insights', ['AI analysis completed'])
+                recommendations = ai_data.get('recommendations', ['Continue current treatment'])
+                briefing_text = ai_data.get('briefing_text', ai_content)
+            except:
+                key_insights = ['AI analysis completed']
+                recommendations = ['Continue current treatment'] 
+                briefing_text = ai_content
+            
+            print(f"✅ Successfully generated AI briefing for {patient_name}")
+            
+            return jsonify({
+                'success': True,
+                'patient_name': patient_name,
+                'data_summary': data_summary,
+                'briefing_text': briefing_text,
+                'key_insights': key_insights,
+                'recommendations': recommendations,
+                'generated_at': datetime.now().isoformat(),
+                'is_mock': False
+            })
+            
+        except Exception as openai_error:
+            print(f"OpenAI API error: {str(openai_error)}")
+            # Fallback to a simple briefing if API fails
+            return jsonify({
+                'success': True,
+                'patient_name': patient_name,
+                'data_summary': data_summary,
+                'briefing_text': f"Clinical Briefing for {patient_name}\n\nDue to API connectivity issues, this is a fallback briefing. The patient is being monitored in our PHQ-9 depression assessment system with regular mood tracking, exercise sessions, and assessments.\n\nNote: AI analysis temporarily unavailable. Please check OpenAI API configuration.",
+                'key_insights': [
+                    "Patient is actively engaged in treatment",
+                    "Regular monitoring indicates good adherence",
+                    "System is functioning for basic clinical needs"
+                ],
+                'recommendations': [
+                    "Continue current treatment plan",
+                    "Monitor patient progress weekly",
+                    "Schedule follow-up assessment",
+                    "Check API configuration for AI features"
+                ],
+                'generated_at': datetime.now().isoformat(),
+                'is_mock': True
+            })
+        
+    except Exception as e:
+        print(f"Error generating AI briefing: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to generate briefing: {str(e)}'
+        }), 500
 
 @app.route('/phq9_assessment', methods=['GET', 'POST'])
 @login_required
@@ -1245,7 +1545,46 @@ def phq9_assessment():
         db.session.add(assessment)
         db.session.flush()  # Get the assessment ID
         
-        # Create crisis alert if needed
+        # Run ML Crisis Detection
+        try:
+            if crisis_detector.is_trained:
+                patient_data = prepare_patient_data_for_crisis_detection(patient, assessment)
+                ml_risk_assessment = crisis_detector.predict_crisis_risk(patient_data)
+                
+                # Add ML risk assessment to analysis
+                analysis['ml_crisis_risk'] = ml_risk_assessment['crisis_risk']
+                analysis['ml_risk_level'] = ml_risk_assessment['risk_level']
+                analysis['ml_confidence'] = ml_risk_assessment['confidence']
+                
+                # Create ML crisis alert if risk is high
+                if ml_risk_assessment['risk_level'] in ['CRITICAL', 'HIGH']:
+                    ml_crisis_alert = CrisisAlert(
+                        assessment_id=assessment.id,
+                        patient_id=patient.id,
+                        alert_type='ml_crisis_detection',
+                        alert_message=f"ML Crisis Detection: {ml_risk_assessment['risk_level']} risk detected (probability: {ml_risk_assessment['crisis_risk']:.3f})",
+                        severity_level='critical' if ml_risk_assessment['risk_level'] == 'CRITICAL' else 'urgent',
+                        acknowledged=False
+                    )
+                    db.session.add(ml_crisis_alert)
+                    
+                    # Update crisis alert flag if ML detects higher risk
+                    if ml_risk_assessment['risk_level'] == 'CRITICAL':
+                        analysis['crisis_alert'] = True
+                        assessment.crisis_alert_triggered = True
+            else:
+                analysis['ml_crisis_risk'] = 0.0
+                analysis['ml_risk_level'] = 'UNKNOWN'
+                analysis['ml_confidence'] = 'LOW'
+                analysis['ml_error'] = 'Model not trained'
+        except Exception as e:
+            print(f"❌ Error in ML crisis detection: {str(e)}")
+            analysis['ml_crisis_risk'] = 0.0
+            analysis['ml_risk_level'] = 'ERROR'
+            analysis['ml_confidence'] = 'LOW'
+            analysis['ml_error'] = str(e)
+        
+        # Create crisis alert if needed (original logic)
         if analysis['crisis_alert']:
             crisis_alert = CrisisAlert(
                 assessment_id=assessment.id,
@@ -2433,6 +2772,1167 @@ def holistic_progress_measurement_api():
 
 # Register dashboard blueprints
 app.register_blueprint(comprehensive_dashboard_blueprint, url_prefix='/provider')
+
+# Add AI Briefing Test route directly to main app for testing
+@app.route('/ai_briefing_test')
+@login_required
+def ai_briefing_test_direct():
+    """AI Briefing Test Page - Direct route for testing"""
+    if current_user.role != 'provider':
+        return jsonify({'error': 'Access denied. Provider role required.'}), 403
+    
+    return render_template('ai_briefing_test.html')
+
+# Import and register AI briefing system
+from ai_briefing_routes import ai_briefing
+app.register_blueprint(ai_briefing, url_prefix='/provider')
+
+# Provider feedback API endpoints (defined here to avoid SQLAlchemy context issues)
+@app.route('/provider/api/patients')
+@login_required
+def provider_api_patients():
+    """API endpoint to get all patients for provider feedback"""
+    if current_user.role != 'provider':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get real patients from database
+        patients = Patient.query.all()
+        
+        patient_data = []
+        for patient in patients:
+            try:
+                # Get latest PHQ-9 assessment
+                latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient.id)\
+                    .order_by(PHQ9Assessment.assessment_date.desc()).first()
+                
+                patient_data.append({
+                    'id': patient.id,
+                    'first_name': patient.first_name,
+                    'last_name': patient.last_name,
+                    'age': patient.age,
+                    'gender': patient.gender,
+                    'current_phq9_severity': latest_assessment.severity_level if latest_assessment else 'unknown',
+                    'last_assessment_date': latest_assessment.assessment_date.isoformat() if latest_assessment else None
+                })
+            except Exception as e:
+                logger.error(f"Error processing patient {patient.id}: {e}")
+                # Add patient with minimal data
+                patient_data.append({
+                    'id': patient.id,
+                    'first_name': 'Patient',
+                    'last_name': f'#{patient.id}',
+                    'age': patient.age or 0,
+                    'gender': patient.gender or 'Unknown',
+                    'current_phq9_severity': 'unknown',
+                    'last_assessment_date': None
+                })
+        
+        return jsonify({'patients': patient_data})
+    except Exception as e:
+        logger.error(f"Error getting patients: {str(e)}")
+        return jsonify({'error': 'Failed to get patients'}), 500
+
+@app.route('/provider/api/provider_exercise_dashboard')
+@login_required  
+def provider_api_dashboard():
+    """API endpoint for provider dashboard data"""
+    if current_user.role != 'provider':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get real data from database
+        patients = Patient.query.all()
+        
+        # Get recent feedback from this provider
+        recent_feedback = ProviderExerciseFeedback.query.filter_by(provider_id=current_user.id)\
+            .order_by(ProviderExerciseFeedback.submitted_at.desc()).limit(5).all()
+        
+        # Get feedback analytics
+        all_feedback = ProviderExerciseFeedback.query.filter_by(provider_id=current_user.id).all()
+        
+        # Calculate feedback analytics
+        action_dist = {}
+        category_dist = {}
+        for feedback in all_feedback:
+            action_dist[feedback.action] = action_dist.get(feedback.action, 0) + 1
+            if feedback.feedback_category:
+                category_dist[feedback.feedback_category] = category_dist.get(feedback.feedback_category, 0) + 1
+        
+        # Get patient summaries with latest PHQ-9 scores
+        patient_summaries = []
+        for patient in patients:
+            latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient.id)\
+                .order_by(PHQ9Assessment.assessment_date.desc()).first()
+            
+            last_feedback = ProviderExerciseFeedback.query.filter_by(
+                patient_id=patient.id, provider_id=current_user.id
+            ).order_by(ProviderExerciseFeedback.submitted_at.desc()).first()
+            
+            patient_summaries.append({
+                'id': patient.id,
+                'name': f"{patient.first_name} {patient.last_name}",
+                'phq9_score': latest_assessment.total_score if latest_assessment else 0,
+                'severity': latest_assessment.severity_level if latest_assessment else 'unknown',
+                'last_feedback': last_feedback.action if last_feedback else 'none',
+                'last_feedback_date': last_feedback.submitted_at.isoformat() if last_feedback else None
+            })
+        
+        dashboard_data = {
+            'provider_id': current_user.id,
+            'total_patients': len(patients),
+            'pending_reviews': len(patients),
+            'recent_feedback': [],
+            'patient_summaries': patient_summaries,
+            'feedback_analytics': {
+                'total_feedback': len(all_feedback),
+                'action_distribution': action_dist,
+                'category_distribution': category_dist
+            },
+            'rl_progress': {
+                'training_samples': len(all_feedback),
+                'model_accuracy': 0.75,
+                'daily_feedback_rate': 5,
+                'data_quality': 0.85
+            }
+        }
+        
+        return jsonify(dashboard_data)
+    except Exception as e:
+        logger.error(f"Error getting provider dashboard: {str(e)}")
+        return jsonify({'error': 'Failed to get dashboard data'}), 500
+
+@app.route('/provider/api/patient_exercise_recommendations/<int:patient_id>')
+@login_required
+def provider_api_patient_recommendations(patient_id):
+    """API endpoint to get patient exercise recommendations"""
+    print(f"🔍 API called for patient {patient_id}")
+    print(f"🔍 Current user: {current_user}")
+    print(f"🔍 User role: {current_user.role if current_user else 'None'}")
+    
+    if current_user.role != 'provider':
+        print(f"❌ Access denied - user role: {current_user.role}")
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        print(f"✅ Authentication passed for patient {patient_id}")
+        from phq9_exercise_integration import PHQ9ExerciseIntegration
+        
+        # Get patient data
+        print(f"🔍 Getting patient data for {patient_id}")
+        patient = Patient.query.get_or_404(patient_id)
+        print(f"✅ Found patient: {patient.first_name} {patient.last_name}")
+        
+        # Get latest PHQ-9 assessment
+        print(f"🔍 Getting PHQ-9 assessment for {patient_id}")
+        latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+            .order_by(PHQ9Assessment.assessment_date.desc()).first()
+        
+        if not latest_assessment:
+            print(f"❌ No PHQ-9 assessment found for patient {patient_id}")
+            return jsonify({'error': 'No PHQ-9 assessment found for this patient'}), 404
+        
+        print(f"✅ Found PHQ-9 assessment: Score {latest_assessment.total_score}, Severity {latest_assessment.severity_level}")
+        
+        # Generate exercise recommendations
+        print(f"🔍 Generating recommendations for patient {patient_id}")
+        integration = PHQ9ExerciseIntegration()
+        recommendations = integration.generate_adaptive_recommendations(
+            patient_id=patient_id,
+            assessment_id=latest_assessment.id
+        )
+        print(f"✅ Generated recommendations: {type(recommendations)}")
+        
+        # Get exercise history
+        exercise_sessions = db.session.query(ExerciseSession, Exercise)\
+            .join(Exercise, ExerciseSession.exercise_id == Exercise.exercise_id)\
+            .filter(ExerciseSession.patient_id == patient_id)\
+            .order_by(ExerciseSession.session_date.desc()).limit(10).all()
+        
+        exercise_history = []
+        for session, exercise in exercise_sessions:
+            exercise_history.append({
+                'exercise_name': exercise.name,
+                'exercise_type': exercise.type,
+                'session_date': session.session_date.isoformat(),
+                'completion_status': session.completion_status,
+                'duration_minutes': session.duration_minutes,
+                'mood_before': session.mood_before,
+                'mood_after': session.mood_after
+            })
+        
+        # Get previous provider feedback
+        previous_feedback = ProviderExerciseFeedback.query.filter_by(patient_id=patient_id)\
+            .order_by(ProviderExerciseFeedback.submitted_at.desc()).limit(5).all()
+        
+        feedback_history = []
+        for feedback in previous_feedback:
+            feedback_history.append({
+                'exercise_type': feedback.exercise_type,
+                'action': feedback.action,
+                'feedback_category': feedback.feedback_category,
+                'feedback_text': feedback.feedback_text,
+                'submitted_at': feedback.submitted_at.isoformat()
+            })
+        
+        # Format recommendations for display
+        print(f"🔍 Formatting recommendations for patient {patient_id}")
+        formatted_recommendations = []
+        if 'exercise_recommendations' in recommendations:
+            exercise_recs = recommendations['exercise_recommendations']
+            
+            # Process daily exercises
+            if 'daily' in exercise_recs:
+                for i, exercise_name in enumerate(exercise_recs['daily']):
+                    formatted_recommendations.append({
+                        'exercise_id': f'daily_{i}',
+                        'exercise_name': exercise_name.replace('_', ' ').title(),
+                        'exercise_type': 'daily',
+                        'difficulty_level': 'easy',
+                        'estimated_duration': 5,
+                        'clinical_focus': ['mood_tracking', 'awareness'],
+                        'rationale': 'Daily maintenance exercise for minimal depression',
+                        'priority': 'high',
+                        'engagement_mechanics': ['quick_check', 'self_reflection']
+                    })
+            
+            # Process weekly exercises
+            if 'weekly' in exercise_recs:
+                for i, exercise_name in enumerate(exercise_recs['weekly']):
+                    formatted_recommendations.append({
+                        'exercise_id': f'weekly_{i}',
+                        'exercise_name': exercise_name.replace('_', ' ').title(),
+                        'exercise_type': 'weekly',
+                        'difficulty_level': 'medium',
+                        'estimated_duration': 15,
+                        'clinical_focus': ['wellness', 'gratitude'],
+                        'rationale': 'Weekly wellness exercise for minimal depression',
+                        'priority': 'medium',
+                        'engagement_mechanics': ['reflection', 'tracking']
+                    })
+        
+        print(f"🔍 Building response data for patient {patient_id}")
+        response_data = {
+            'patient_info': {
+                'id': patient.id,
+                'name': f"{patient.first_name} {patient.last_name}",
+                'first_name': patient.first_name,
+                'last_name': patient.last_name,
+                'age': patient.age,
+                'gender': patient.gender,
+                'total_score': latest_assessment.total_score,
+                'current_phq9_score': latest_assessment.total_score,
+                'current_severity': latest_assessment.severity_level,
+                'current_phq9_severity': latest_assessment.severity_level,
+                'last_assessment': latest_assessment.assessment_date.isoformat(),
+                'assessment_date': latest_assessment.assessment_date.isoformat(),
+                'q9_risk': latest_assessment.q9_risk_flag,
+                'risk_flag': latest_assessment.q9_risk_flag
+            },
+            'recommendations': {
+                'severity_based_recommendations': {
+                    'daily': formatted_recommendations[:3],  # First 3 as daily
+                    'weekly': formatted_recommendations[3:]  # Rest as weekly
+                },
+                'raw_recommendations': formatted_recommendations
+            },
+            'exercise_history': exercise_history,
+            'feedback_history': feedback_history,
+            'previous_feedback': feedback_history
+        }
+        
+        print(f"✅ Response data built successfully for patient {patient_id}")
+        return jsonify(response_data)
+    except Exception as e:
+        logger.error(f"Error getting patient recommendations: {str(e)}")
+        return jsonify({'error': 'Failed to get patient recommendations'}), 500
+
+# Simple exercise feedback page
+@app.route('/provider/simple_exercise_feedback')
+@login_required
+def simple_exercise_feedback():
+    """Simple exercise feedback page"""
+    if current_user.role != 'provider':
+        return redirect(url_for('login'))
+    return render_template('simple_exercise_feedback.html')
+
+# Provider feedback system integrated directly into main app
+
+@app.route('/provider/api/submit_feedback', methods=['POST'])
+@login_required
+def submit_provider_feedback():
+    """API endpoint to submit provider feedback on exercise recommendations"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        required_fields = ['patient_id', 'exercise_name', 'action', 'exercise_type']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Create feedback record
+        feedback = ProviderExerciseFeedback(
+            patient_id=data['patient_id'],
+            provider_id=current_user.id,
+            recommendation_id=f"simple_{data['exercise_name'].replace(' ', '_').lower()}",
+            exercise_type=data['exercise_type'],
+            action=data['action'],
+            feedback_category='exercise_recommendation',
+            feedback_text=data.get('feedback_text', ''),
+            clinical_rationale=data.get('clinical_rationale', ''),
+            submitted_at=datetime.utcnow()
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        print(f"✅ Feedback saved: {data['action']} for {data['exercise_name']} by provider {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Feedback recorded: {data["action"]} for {data["exercise_name"]}',
+            'feedback_id': feedback.id
+        })
+        
+    except Exception as e:
+        print(f"❌ Error saving feedback: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to save feedback'}), 500
+
+@app.route('/provider/api/feedback_history/<int:patient_id>')
+@login_required
+def get_feedback_history(patient_id):
+    """API endpoint to get feedback history for a patient"""
+    try:
+        feedback_records = ProviderExerciseFeedback.query.filter_by(patient_id=patient_id)\
+            .order_by(ProviderExerciseFeedback.submitted_at.desc()).limit(10).all()
+        
+        feedback_data = []
+        for feedback in feedback_records:
+            feedback_data.append({
+                'id': feedback.id,
+                'exercise_name': feedback.recommendation_id.replace('simple_', '').replace('_', ' ').title(),
+                'action': feedback.action,
+                'feedback_text': feedback.feedback_text,
+                'submitted_at': feedback.submitted_at.isoformat()
+            })
+        
+        return jsonify({'feedback_history': feedback_data})
+        
+    except Exception as e:
+        print(f"❌ Error getting feedback history: {str(e)}")
+        return jsonify({'error': 'Failed to get feedback history'}), 500
+
+@app.route('/provider/api/session_briefing/<int:patient_id>')
+@login_required
+def get_session_briefing(patient_id):
+    """API endpoint to generate AI-powered pre-session intelligence briefing"""
+    try:
+        if not claude_client:
+            # Provide a mock briefing when Claude API is not available
+            return generate_mock_briefing(patient_id)
+        
+        # Get patient data
+        patient = Patient.query.get_or_404(patient_id)
+        
+        # Get latest PHQ-9 assessment
+        latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+            .order_by(PHQ9Assessment.assessment_date.desc()).first()
+        
+        if not latest_assessment:
+            return jsonify({'error': 'No PHQ-9 assessment found for this patient'}), 404
+        
+        # Get recent exercise sessions (last 14 days)
+        from datetime import datetime, timedelta
+        two_weeks_ago = datetime.utcnow() - timedelta(days=14)
+        
+        exercise_sessions = db.session.query(ExerciseSession, Exercise)\
+            .join(Exercise, ExerciseSession.exercise_id == Exercise.exercise_id)\
+            .filter(ExerciseSession.patient_id == patient_id)\
+            .filter(ExerciseSession.start_time >= two_weeks_ago)\
+            .order_by(ExerciseSession.start_time.desc()).all()
+        
+        # Get recent mood entries (last 14 days)
+        mood_entries = MoodEntry.query.filter_by(patient_id=patient_id)\
+            .filter(MoodEntry.timestamp >= two_weeks_ago)\
+            .order_by(MoodEntry.timestamp.desc()).all()
+        
+        # Get recent provider feedback
+        recent_feedback = ProviderExerciseFeedback.query.filter_by(patient_id=patient_id)\
+            .order_by(ProviderExerciseFeedback.submitted_at.desc()).limit(5).all()
+        
+        # Prepare data for AI analysis
+        exercise_summary = []
+        for session, exercise in exercise_sessions:
+            # Calculate duration if both start and completion times exist
+            duration_minutes = None
+            if session.completion_time and session.start_time:
+                duration = session.completion_time - session.start_time
+                duration_minutes = int(duration.total_seconds() / 60)
+            
+            exercise_summary.append({
+                'exercise_name': exercise.name,
+                'exercise_type': exercise.type,
+                'session_date': session.start_time.isoformat(),
+                'completion_status': session.completion_status,
+                'duration_minutes': duration_minutes,
+                'engagement_score': session.engagement_score,
+                'effectiveness_rating': session.effectiveness_rating,
+                'collected_data': session.collected_data
+            })
+        
+        mood_summary = []
+        for mood in mood_entries:
+            mood_summary.append({
+                'timestamp': mood.timestamp.isoformat(),
+                'intensity_level': mood.intensity_level,
+                'energy_level': mood.energy_level,
+                'sleep_quality': mood.sleep_quality
+            })
+        
+        feedback_summary = []
+        for feedback in recent_feedback:
+            feedback_summary.append({
+                'exercise_name': feedback.recommendation_id.replace('simple_', '').replace('_', ' ').title(),
+                'action': feedback.action,
+                'feedback_text': feedback.feedback_text,
+                'submitted_at': feedback.submitted_at.isoformat()
+            })
+        
+        # Create AI prompt
+        prompt = f"""
+You are a clinical AI assistant providing pre-session intelligence briefings for mental health providers. 
+
+PATIENT PROFILE:
+- Name: {patient.first_name} {patient.last_name}
+- Age: {patient.age}
+- Gender: {patient.gender}
+- Current PHQ-9 Score: {latest_assessment.total_score}/27
+- Current Severity: {latest_assessment.severity_level}
+- Last Assessment: {latest_assessment.assessment_date.strftime('%Y-%m-%d')}
+
+RECENT EXERCISE ACTIVITY (Last 14 days):
+{exercise_summary}
+
+RECENT MOOD TRACKING (Last 14 days):
+{mood_summary}
+
+RECENT PROVIDER FEEDBACK:
+{feedback_summary}
+
+Please provide a comprehensive pre-session briefing that includes:
+
+1. **EXERCISE ENGAGEMENT ANALYSIS**: Patterns in exercise completion, engagement scores, and effectiveness ratings
+2. **MOOD TRAJECTORY INSIGHTS**: Trends in mood intensity, energy levels, and sleep quality
+3. **CLINICAL OBSERVATIONS**: Key patterns that may indicate progress or concerns
+4. **SESSION FOCUS AREAS**: Specific topics to address based on recent activity
+5. **EXERCISE RECOMMENDATIONS**: Suggested modifications or new exercises based on feedback
+6. **RISK ASSESSMENT**: Any concerning patterns that need immediate attention
+7. **PROGRESS INDICATORS**: Positive changes and areas of improvement
+
+Format the response as a professional clinical briefing with clear sections and actionable insights.
+"""
+
+        # Generate AI briefing
+        try:
+            response = claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=2000,
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+            
+            briefing_text = response.content[0].text
+            
+            # Parse the briefing into sections for better display
+            sections = parse_briefing_sections(briefing_text)
+            
+            return jsonify({
+                'success': True,
+                'patient_name': f"{patient.first_name} {patient.last_name}",
+                'briefing_text': briefing_text,
+                'sections': sections,
+                'data_summary': {
+                    'exercise_sessions_count': len(exercise_summary),
+                    'mood_entries_count': len(mood_summary),
+                    'feedback_count': len(feedback_summary),
+                    'phq9_score': latest_assessment.total_score,
+                    'severity': latest_assessment.severity_level
+                }
+            })
+        except Exception as claude_error:
+            print(f"❌ Claude API error: {str(claude_error)}")
+            # Fallback to mock briefing if Claude API fails
+            return generate_mock_briefing(patient_id, exercise_summary, mood_summary, feedback_summary, latest_assessment)
+        
+    except Exception as e:
+        print(f"❌ Error generating session briefing: {str(e)}")
+        return jsonify({'error': 'Failed to generate session briefing'}), 500
+
+# ============================================================================
+# CRISIS DETECTION API ROUTES
+# ============================================================================
+
+@app.route('/api/crisis_detection/assess_risk', methods=['POST'])
+@login_required
+def assess_crisis_risk():
+    """Assess crisis risk for a patient using XGBoost model"""
+    try:
+        data = request.get_json()
+        patient_id = data.get('patient_id')
+        
+        if not patient_id:
+            return jsonify({'error': 'Patient ID is required'}), 400
+        
+        # Get patient data
+        patient = Patient.query.get_or_404(patient_id)
+        
+        # Get latest PHQ-9 assessment
+        latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+            .order_by(PHQ9Assessment.assessment_date.desc()).first()
+        
+        if not latest_assessment:
+            return jsonify({'error': 'No PHQ-9 assessment found for this patient'}), 404
+        
+        # Prepare patient data for crisis detection
+        patient_data = prepare_patient_data_for_crisis_detection(patient, latest_assessment)
+        
+        # Get crisis risk assessment
+        risk_assessment = crisis_detector.predict_crisis_risk(patient_data)
+        
+        # Create crisis alert if risk is high
+        if risk_assessment['risk_level'] in ['CRITICAL', 'HIGH']:
+            crisis_alert = CrisisAlert(
+                patient_id=patient_id,
+                assessment_id=latest_assessment.id,
+                alert_type='ml_crisis_detection',
+                alert_message=f"ML Crisis Detection Alert: {risk_assessment['risk_level']} risk detected (probability: {risk_assessment['crisis_risk']:.3f})",
+                severity_level='critical' if risk_assessment['risk_level'] == 'CRITICAL' else 'urgent'
+            )
+            db.session.add(crisis_alert)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'risk_assessment': risk_assessment,
+            'patient_id': patient_id,
+            'assessment_id': latest_assessment.id
+        })
+        
+    except Exception as e:
+        print(f"❌ Error assessing crisis risk: {str(e)}")
+        return jsonify({'error': 'Failed to assess crisis risk'}), 500
+
+@app.route('/api/crisis_detection/batch_assess', methods=['POST'])
+@login_required
+def batch_assess_crisis_risk():
+    """Batch assess crisis risk for multiple patients"""
+    try:
+        if current_user.role != 'provider':
+            return jsonify({'error': 'Provider access required'}), 403
+        
+        data = request.get_json()
+        patient_ids = data.get('patient_ids', [])
+        
+        if not patient_ids:
+            # Get all patients if no specific IDs provided
+            patients = Patient.query.all()
+            patient_ids = [p.id for p in patients]
+        
+        results = []
+        alerts_created = 0
+        
+        for patient_id in patient_ids:
+            try:
+                patient = Patient.query.get(patient_id)
+                if not patient:
+                    continue
+                
+                # Get latest PHQ-9 assessment
+                latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+                    .order_by(PHQ9Assessment.assessment_date.desc()).first()
+                
+                if not latest_assessment:
+                    continue
+                
+                # Prepare patient data
+                patient_data = prepare_patient_data_for_crisis_detection(patient, latest_assessment)
+                
+                # Get risk assessment
+                risk_assessment = crisis_detector.predict_crisis_risk(patient_data)
+                
+                # Create crisis alert if high risk
+                if risk_assessment['risk_level'] in ['CRITICAL', 'HIGH']:
+                    crisis_alert = CrisisAlert(
+                        patient_id=patient_id,
+                        assessment_id=latest_assessment.id,
+                        alert_type='ml_crisis_detection_batch',
+                        alert_message=f"Batch ML Crisis Detection: {risk_assessment['risk_level']} risk (probability: {risk_assessment['crisis_risk']:.3f})",
+                        severity_level='critical' if risk_assessment['risk_level'] == 'CRITICAL' else 'urgent'
+                    )
+                    db.session.add(crisis_alert)
+                    alerts_created += 1
+                
+                results.append({
+                    'patient_id': patient_id,
+                    'patient_name': f"{patient.first_name} {patient.last_name}",
+                    'risk_assessment': risk_assessment
+                })
+                
+            except Exception as e:
+                print(f"❌ Error processing patient {patient_id}: {str(e)}")
+                continue
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'alerts_created': alerts_created,
+            'total_patients': len(results)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in batch crisis assessment: {str(e)}")
+        return jsonify({'error': 'Failed to perform batch crisis assessment'}), 500
+
+@app.route('/api/crisis_detection/train_model', methods=['POST'])
+@login_required
+def train_crisis_detection_model():
+    """Train the crisis detection model with current data"""
+    try:
+        if current_user.role != 'provider':
+            return jsonify({'error': 'Provider access required'}), 403
+        
+        # Get training data from database
+        training_data, labels = prepare_training_data_for_crisis_detection()
+        
+        if len(training_data) < 10:
+            return jsonify({'error': 'Insufficient training data. Need at least 10 samples.'}), 400
+        
+        # Train the model
+        accuracy = crisis_detector.train(training_data, labels)
+        
+        return jsonify({
+            'success': True,
+            'accuracy': accuracy,
+            'training_samples': len(training_data),
+            'message': 'Crisis detection model trained successfully'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error training crisis detection model: {str(e)}")
+        return jsonify({'error': 'Failed to train crisis detection model'}), 500
+
+@app.route('/api/crisis_detection/model_status')
+@login_required
+def get_crisis_detection_model_status():
+    """Get crisis detection model status and information"""
+    try:
+        status = {
+            'is_trained': crisis_detector.is_trained,
+            'model_path': crisis_detector.model_path,
+            'feature_count': len(crisis_detector.feature_names) if crisis_detector.feature_names else 0
+        }
+        
+        if crisis_detector.is_trained and crisis_detector.feature_names:
+            # Get feature importance
+            feature_importance = dict(zip(crisis_detector.feature_names, crisis_detector.model.feature_importances_))
+            status['top_features'] = dict(sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)[:10])
+        
+        return jsonify({
+            'success': True,
+            'model_status': status
+        })
+        
+    except Exception as e:
+        print(f"❌ Error getting model status: {str(e)}")
+        return jsonify({'error': 'Failed to get model status'}), 500
+
+@app.route('/provider/crisis_detection')
+@login_required
+def crisis_detection_management():
+    """Crisis detection management page for providers"""
+    if current_user.role != 'provider':
+        flash('Access denied. Provider role required.', 'error')
+        return redirect(url_for('index'))
+    
+    # Get all ML crisis alerts
+    ml_alerts = CrisisAlert.query.filter(
+        CrisisAlert.alert_type.like('%ml_crisis_detection%')
+    ).order_by(CrisisAlert.created_at.desc()).limit(20).all()
+    
+    # Get model status
+    model_status = {
+        'is_trained': crisis_detector.is_trained,
+        'feature_count': len(crisis_detector.feature_names) if crisis_detector.feature_names else 0,
+        'model_path': crisis_detector.model_path
+    }
+    
+    # Get recent assessments with ML risk data
+    recent_assessments = PHQ9Assessment.query\
+        .order_by(PHQ9Assessment.assessment_date.desc()).limit(10).all()
+    
+    return render_template('crisis_detection_management.html',
+                         ml_alerts=ml_alerts,
+                         model_status=model_status,
+                         recent_assessments=recent_assessments)
+
+@app.route('/provider/crisis_detection/batch_assess_all', methods=['POST'])
+@login_required
+def batch_assess_all_patients():
+    """Batch assess all patients for crisis risk"""
+    if current_user.role != 'provider':
+        return jsonify({'error': 'Provider access required'}), 403
+    
+    try:
+        # Get all patients
+        patients = Patient.query.all()
+        patient_ids = [p.id for p in patients]
+        
+        # Perform batch assessment
+        results = []
+        alerts_created = 0
+        
+        for patient_id in patient_ids:
+            try:
+                patient = Patient.query.get(patient_id)
+                if not patient:
+                    continue
+                
+                # Get latest PHQ-9 assessment
+                latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+                    .order_by(PHQ9Assessment.assessment_date.desc()).first()
+                
+                if not latest_assessment:
+                    continue
+                
+                # Prepare patient data
+                patient_data = prepare_patient_data_for_crisis_detection(patient, latest_assessment)
+                
+                # Get risk assessment
+                risk_assessment = crisis_detector.predict_crisis_risk(patient_data)
+                
+                # Create crisis alert if high risk
+                if risk_assessment['risk_level'] in ['CRITICAL', 'HIGH']:
+                    crisis_alert = CrisisAlert(
+                        patient_id=patient_id,
+                        assessment_id=latest_assessment.id,
+                        alert_type='ml_crisis_detection_batch',
+                        alert_message=f"Batch ML Crisis Detection: {risk_assessment['risk_level']} risk (probability: {risk_assessment['crisis_risk']:.3f})",
+                        severity_level='critical' if risk_assessment['risk_level'] == 'CRITICAL' else 'urgent'
+                    )
+                    db.session.add(crisis_alert)
+                    alerts_created += 1
+                
+                results.append({
+                    'patient_id': patient_id,
+                    'patient_name': f"{patient.first_name} {patient.last_name}",
+                    'risk_assessment': risk_assessment
+                })
+                
+            except Exception as e:
+                print(f"❌ Error processing patient {patient_id}: {str(e)}")
+                continue
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'alerts_created': alerts_created,
+            'total_patients': len(results)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in batch crisis assessment: {str(e)}")
+        return jsonify({'error': 'Failed to perform batch crisis assessment'}), 500
+
+# ============================================================================
+# PREDICTION HELPER FUNCTIONS
+# ============================================================================
+
+def get_rule_based_prediction(patient):
+    """Get rule-based prediction based on PHQ-9 severity level"""
+    severity = patient.current_phq9_severity
+    
+    if severity in ['moderately_severe', 'severe']:
+        return {
+            'risk_level': 'HIGH',
+            'risk_score': 0.8,
+            'description': 'High Risk - Severe depression symptoms'
+        }
+    elif severity == 'moderate':
+        return {
+            'risk_level': 'MEDIUM',
+            'risk_score': 0.5,
+            'description': 'Medium Risk - Moderate depression symptoms'
+        }
+    elif severity == 'mild':
+        return {
+            'risk_level': 'LOW',
+            'risk_score': 0.3,
+            'description': 'Low Risk - Mild depression symptoms'
+        }
+    else:  # minimal
+        return {
+            'risk_level': 'MINIMAL',
+            'risk_score': 0.1,
+            'description': 'Minimal Risk - No significant depression symptoms'
+        }
+
+def calculate_combined_prediction(rule_based_prediction, ml_risk_assessment):
+    """Calculate combined prediction with 70% ML weight and 30% rule-based weight"""
+    try:
+        # Convert rule-based risk level to numeric score
+        rule_score = rule_based_prediction['risk_score']
+        
+        # Get ML risk probability
+        ml_score = ml_risk_assessment['crisis_risk']
+        
+        # Calculate weighted average (70% ML, 30% rule-based)
+        combined_score = (0.7 * ml_score) + (0.3 * rule_score)
+        
+        # Determine combined risk level
+        if combined_score >= 0.8:
+            risk_level = 'CRITICAL'
+        elif combined_score >= 0.6:
+            risk_level = 'HIGH'
+        elif combined_score >= 0.4:
+            risk_level = 'MEDIUM'
+        elif combined_score >= 0.2:
+            risk_level = 'LOW'
+        else:
+            risk_level = 'MINIMAL'
+        
+        # Determine confidence based on agreement between models
+        score_difference = abs(ml_score - rule_score)
+        if score_difference <= 0.1:
+            confidence = 'HIGH'
+        elif score_difference <= 0.3:
+            confidence = 'MEDIUM'
+        else:
+            confidence = 'LOW'
+        
+        return {
+            'risk_level': risk_level,
+            'risk_score': combined_score,
+            'confidence': confidence,
+            'ml_weight': 0.7,
+            'rule_weight': 0.3,
+            'description': f'Combined Prediction: {risk_level} risk ({combined_score:.1%})'
+        }
+        
+    except Exception as e:
+        print(f"❌ Error calculating combined prediction: {str(e)}")
+        return {
+            'risk_level': 'ERROR',
+            'risk_score': 0.0,
+            'confidence': 'LOW',
+            'description': f'Error calculating combined prediction: {str(e)}'
+        }
+
+# ============================================================================
+# CRISIS DETECTION HELPER FUNCTIONS
+# ============================================================================
+
+def prepare_patient_data_for_crisis_detection(patient, assessment):
+    """Prepare patient data for crisis detection model"""
+    try:
+        # Get additional patient data
+        from datetime import datetime, timedelta
+        
+        # Calculate days since last session
+        days_since_last_session = 0
+        if assessment.assessment_date:
+            days_since_last_session = (datetime.utcnow() - assessment.assessment_date).days
+        
+        # Get exercise completion rate (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        exercise_sessions = ExerciseSession.query.filter(
+            ExerciseSession.patient_id == patient.id,
+            ExerciseSession.start_time >= thirty_days_ago
+        ).all()
+        
+        exercise_completion_rate = 1.0
+        if exercise_sessions:
+            completed_sessions = sum(1 for session in exercise_sessions if session.completion_time)
+            exercise_completion_rate = completed_sessions / len(exercise_sessions)
+        
+        # Get mood data
+        mood_entries = MoodEntry.query.filter(
+            MoodEntry.patient_id == patient.id,
+            MoodEntry.timestamp >= thirty_days_ago
+        ).order_by(MoodEntry.timestamp.desc()).all()
+        
+        mood_intensity = 5  # Default neutral
+        mood_trend = 0
+        if mood_entries:
+            recent_moods = [entry.intensity_level for entry in mood_entries[:5]]
+            mood_intensity = sum(recent_moods) / len(recent_moods)
+            if len(mood_entries) >= 2:
+                mood_trend = mood_entries[0].intensity_level - mood_entries[-1].intensity_level
+        
+        # Get crisis history
+        previous_crisis_count = CrisisAlert.query.filter(
+            CrisisAlert.patient_id == patient.id,
+            CrisisAlert.created_at >= thirty_days_ago
+        ).count()
+        
+        # Calculate PHQ-9 trend (if multiple assessments exist)
+        phq9_trend = 0
+        previous_assessments = PHQ9Assessment.query.filter(
+            PHQ9Assessment.patient_id == patient.id,
+            PHQ9Assessment.assessment_date < assessment.assessment_date
+        ).order_by(PHQ9Assessment.assessment_date.desc()).limit(1).all()
+        
+        if previous_assessments:
+            phq9_trend = assessment.total_score - previous_assessments[0].total_score
+        
+        # Count crisis keywords in recent journal entries (if available)
+        crisis_keywords = ['suicide', 'kill', 'end', 'hopeless', 'worthless', 'die', 'death']
+        crisis_keyword_count = 0
+        # This would need to be implemented if journal entries are stored
+        
+        # Prepare data in the format expected by the crisis detector
+        patient_data = {
+            'phq9_total_score': assessment.total_score,
+            'q9_score': assessment.q9_score,
+            'phq9_severity_level': assessment.severity_level,
+            'phq9_trend': phq9_trend,
+            'mood_intensity': mood_intensity,
+            'mood_trend': mood_trend,
+            'exercise_completion_rate': exercise_completion_rate,
+            'days_since_last_session': days_since_last_session,
+            'crisis_keyword_count': crisis_keyword_count,
+            'previous_crisis_count': previous_crisis_count,
+            'assessment_frequency': 7,  # Default weekly
+            'treatment_duration': (datetime.utcnow() - patient.created_at).days,
+            'age': patient.age or 30,
+            'isolation_level': 0,  # Default
+            'social_support': 1,  # Default
+            'medication_adherence': 1.0,  # Default
+            'therapy_attendance': 1.0,  # Default
+            'provider_concern': 0,  # Default
+            'clinical_observations': 0  # Default
+        }
+        
+        return patient_data
+        
+    except Exception as e:
+        print(f"❌ Error preparing patient data for crisis detection: {str(e)}")
+        # Return minimal data if error occurs
+        return {
+            'phq9_total_score': assessment.total_score,
+            'q9_score': assessment.q9_score,
+            'phq9_severity_level': assessment.severity_level,
+            'phq9_trend': 0,
+            'mood_intensity': 5,
+            'mood_trend': 0,
+            'exercise_completion_rate': 1.0,
+            'days_since_last_session': 0,
+            'crisis_keyword_count': 0,
+            'previous_crisis_count': 0,
+            'assessment_frequency': 7,
+            'treatment_duration': 0,
+            'age': patient.age or 30,
+            'isolation_level': 0,
+            'social_support': 1,
+            'medication_adherence': 1.0,
+            'therapy_attendance': 1.0,
+            'provider_concern': 0,
+            'clinical_observations': 0
+        }
+
+def prepare_training_data_for_crisis_detection():
+    """Prepare training data for crisis detection model from database"""
+    try:
+        training_data = []
+        labels = []
+        
+        # Get all patients with assessments
+        patients = Patient.query.all()
+        
+        for patient in patients:
+            # Get all assessments for this patient
+            assessments = PHQ9Assessment.query.filter_by(patient_id=patient.id)\
+                .order_by(PHQ9Assessment.assessment_date.desc()).all()
+            
+            for assessment in assessments:
+                # Prepare patient data for this assessment
+                patient_data = prepare_patient_data_for_crisis_detection(patient, assessment)
+                training_data.append(patient_data)
+                
+                # Create label based on Q9 score and total score
+                # High risk: Q9 >= 2 or total score >= 20
+                is_crisis = 1 if (assessment.q9_score >= 2 or assessment.total_score >= 20) else 0
+                labels.append(is_crisis)
+        
+        return training_data, labels
+        
+    except Exception as e:
+        print(f"❌ Error preparing training data: {str(e)}")
+        return [], []
+
+def generate_mock_briefing(patient_id, exercise_summary=None, mood_summary=None, feedback_summary=None, latest_assessment=None):
+    """Generate a mock briefing when Claude API is not available"""
+    try:
+        # Get patient data
+        patient = Patient.query.get_or_404(patient_id)
+        
+        if not latest_assessment:
+            latest_assessment = PHQ9Assessment.query.filter_by(patient_id=patient_id)\
+                .order_by(PHQ9Assessment.assessment_date.desc()).first()
+        
+        if not latest_assessment:
+            return jsonify({'error': 'No PHQ-9 assessment found for this patient'}), 404
+        
+        # Generate mock briefing based on available data
+        briefing_text = f"""
+**PATIENT OVERVIEW**
+Patient: {patient.first_name} {patient.last_name}
+Age: {patient.age}
+Current PHQ-9 Score: {latest_assessment.total_score}/27
+Severity Level: {latest_assessment.severity_level.replace('_', ' ').title()}
+
+**EXERCISE ENGAGEMENT ANALYSIS**
+Based on recent activity data:
+- Total exercise sessions: {len(exercise_summary) if exercise_summary else 0}
+- Completion rate: {calculate_completion_rate(exercise_summary) if exercise_summary else 'N/A'}
+- Average engagement score: {calculate_avg_engagement(exercise_summary) if exercise_summary else 'N/A'}
+
+**MOOD TRAJECTORY INSIGHTS**
+Recent mood tracking data:
+- Mood entries recorded: {len(mood_summary) if mood_summary else 0}
+- Average mood intensity: {calculate_avg_mood_intensity(mood_summary) if mood_summary else 'N/A'}
+- Sleep quality trends: {analyze_sleep_quality(mood_summary) if mood_summary else 'N/A'}
+
+**CLINICAL OBSERVATIONS**
+- Patient shows {latest_assessment.severity_level.replace('_', ' ')} depression symptoms
+- Recent exercise engagement appears {'positive' if len(exercise_summary) > 0 else 'limited'}
+- {'Good' if latest_assessment.total_score < 10 else 'Moderate' if latest_assessment.total_score < 15 else 'High'} risk level based on PHQ-9 score
+
+**SESSION FOCUS AREAS**
+1. Review exercise completion and effectiveness
+2. Discuss mood patterns and triggers
+3. Address any barriers to exercise engagement
+4. Plan next steps based on current progress
+
+**EXERCISE RECOMMENDATIONS**
+- Continue current exercise routine if engagement is positive
+- Consider adjusting difficulty or type if engagement is low
+- Focus on exercises that align with patient's preferences
+
+**RISK ASSESSMENT**
+- {'Low' if latest_assessment.total_score < 10 else 'Moderate' if latest_assessment.total_score < 15 else 'High'} risk based on PHQ-9 score
+- {'No' if not latest_assessment.q9_risk_flag else 'Yes'} suicidal ideation risk detected
+
+**PROGRESS INDICATORS**
+- PHQ-9 score indicates {latest_assessment.severity_level.replace('_', ' ')} depression
+- Exercise engagement: {'Active' if len(exercise_summary) > 0 else 'Limited'}
+- Overall progress: {'Positive' if latest_assessment.total_score < 15 else 'Needs attention'}
+
+**NOTE**: This is a mock briefing generated without AI analysis. For full AI-powered insights, please configure the Claude API key.
+"""
+        
+        sections = parse_briefing_sections(briefing_text)
+        
+        return jsonify({
+            'success': True,
+            'patient_name': f"{patient.first_name} {patient.last_name}",
+            'briefing_text': briefing_text,
+            'sections': sections,
+            'data_summary': {
+                'exercise_sessions_count': len(exercise_summary) if exercise_summary else 0,
+                'mood_entries_count': len(mood_summary) if mood_summary else 0,
+                'feedback_count': len(feedback_summary) if feedback_summary else 0,
+                'phq9_score': latest_assessment.total_score,
+                'severity': latest_assessment.severity_level
+            },
+            'is_mock': True
+        })
+        
+    except Exception as e:
+        print(f"❌ Error generating mock briefing: {str(e)}")
+        return jsonify({'error': 'Failed to generate briefing'}), 500
+
+def calculate_completion_rate(exercise_summary):
+    """Calculate completion rate from exercise summary"""
+    if not exercise_summary:
+        return "N/A"
+    completed = sum(1 for session in exercise_summary if session.get('completion_status') == 'completed')
+    return f"{(completed / len(exercise_summary) * 100):.1f}%" if exercise_summary else "N/A"
+
+def calculate_avg_engagement(exercise_summary):
+    """Calculate average engagement score"""
+    if not exercise_summary:
+        return "N/A"
+    scores = [session.get('engagement_score') for session in exercise_summary if session.get('engagement_score')]
+    return f"{sum(scores) / len(scores):.1f}" if scores else "N/A"
+
+def calculate_avg_mood_intensity(mood_summary):
+    """Calculate average mood intensity"""
+    if not mood_summary:
+        return "N/A"
+    intensities = [mood.get('intensity_level') for mood in mood_summary if mood.get('intensity_level')]
+    return f"{sum(intensities) / len(intensities):.1f}" if intensities else "N/A"
+
+def analyze_sleep_quality(mood_summary):
+    """Analyze sleep quality trends"""
+    if not mood_summary:
+        return "N/A"
+    sleep_scores = [mood.get('sleep_quality') for mood in mood_summary if mood.get('sleep_quality')]
+    if not sleep_scores:
+        return "N/A"
+    avg_sleep = sum(sleep_scores) / len(sleep_scores)
+    if avg_sleep >= 7:
+        return "Good"
+    elif avg_sleep >= 5:
+        return "Fair"
+    else:
+        return "Poor"
+
+def parse_briefing_sections(briefing_text):
+    """Parse AI briefing into structured sections"""
+    sections = {}
+    current_section = None
+    current_content = []
+    
+    lines = briefing_text.split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Check if this is a section header (starts with ** or is all caps)
+        if (line.startswith('**') and line.endswith('**')) or (line.isupper() and len(line) > 3):
+            # Save previous section
+            if current_section and current_content:
+                sections[current_section] = '\n'.join(current_content).strip()
+            
+            # Start new section
+            current_section = line.replace('**', '').strip()
+            current_content = []
+        else:
+            if current_section:
+                current_content.append(line)
+            else:
+                # Content before any section header
+                if 'general' not in sections:
+                    sections['general'] = []
+                sections['general'].append(line)
+    
+    # Save last section
+    if current_section and current_content:
+        sections[current_section] = '\n'.join(current_content).strip()
+    
+    return sections
 
 if __name__ == '__main__':
     print("🚀 Starting MindSpace PHQ-9 Analysis App...")

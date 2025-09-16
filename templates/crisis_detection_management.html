@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crisis Detection Management - MindSpace ML</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .crisis-alert-critical { border-left: 5px solid #dc3545; }
+        .crisis-alert-urgent { border-left: 5px solid #fd7e14; }
+        .crisis-alert-warning { border-left: 5px solid #ffc107; }
+        .risk-badge-critical { background-color: #dc3545; }
+        .risk-badge-high { background-color: #fd7e14; }
+        .risk-badge-medium { background-color: #ffc107; }
+        .risk-badge-low { background-color: #28a745; }
+        .risk-badge-minimal { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain"></i> MindSpace ML
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('provider_dashboard_basic') }}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    Crisis Detection Management
+                </h1>
+            </div>
+        </div>
+
+        <!-- Model Status Card -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-robot"></i> Model Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Status:</strong>
+                                {% if model_status.is_trained %}
+                                    <span class="badge bg-success">Trained</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Not Trained</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <strong>Features:</strong> {{ model_status.feature_count }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm" onclick="trainModel()">
+                                <i class="fas fa-cogs"></i> Train Model
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="batchAssessAll()">
+                                <i class="fas fa-search"></i> Assess All Patients
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line"></i> Quick Stats
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h4 class="text-danger">{{ ml_alerts|selectattr('severity_level', 'equalto', 'critical')|list|length }}</h4>
+                                <small>Critical Alerts</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-warning">{{ ml_alerts|selectattr('severity_level', 'equalto', 'urgent')|list|length }}</h4>
+                                <small>Urgent Alerts</small>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-info">{{ ml_alerts|length }}</h4>
+                                <small>Total ML Alerts</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Crisis Alerts -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-circle"></i> ML Crisis Detection Alerts
+                        </h5>
+                        <span class="badge bg-primary">{{ ml_alerts|length }} alerts</span>
+                    </div>
+                    <div class="card-body">
+                        {% if ml_alerts %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Alert Type</th>
+                                            <th>Severity</th>
+                                            <th>Message</th>
+                                            <th>Created</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for alert in ml_alerts %}
+                                        <tr class="crisis-alert-{{ alert.severity_level }}">
+                                            <td>
+                                                <strong>{{ alert.patient.first_name }} {{ alert.patient.last_name }}</strong>
+                                                <br><small class="text-muted">ID: {{ alert.patient_id }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ alert.alert_type.replace('_', ' ').title() }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge risk-badge-{{ alert.severity_level }}">
+                                                    {{ alert.severity_level.title() }}
+                                                </span>
+                                            </td>
+                                            <td>{{ alert.alert_message }}</td>
+                                            <td>{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                {% if alert.acknowledged %}
+                                                    <span class="badge bg-success">Acknowledged</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if not alert.acknowledged %}
+                                                    <button class="btn btn-sm btn-success" onclick="acknowledgeAlert({{ alert.id }})">
+                                                        <i class="fas fa-check"></i> Acknowledge
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                <p>No ML crisis detection alerts found.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Assessments with ML Risk -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-list"></i> Recent Assessments
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>PHQ-9 Score</th>
+                                        <th>Severity</th>
+                                        <th>Q9 Risk</th>
+                                        <th>Assessment Date</th>
+                                        <th>ML Risk</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assessment in recent_assessments %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ assessment.patient.first_name }} {{ assessment.patient.last_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ assessment.total_score }}/27</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ assessment.severity_level.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if assessment.q9_risk_flag %}
+                                                <span class="badge bg-danger">High Risk</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Low Risk</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ assessment.assessment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="assessPatientRisk({{ assessment.patient_id }})">
+                                                <i class="fas fa-search"></i> Assess
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function trainModel() {
+            if (confirm('This will train the crisis detection model with current data. Continue?')) {
+                fetch('/api/crisis_detection/train_model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Model trained successfully! Accuracy: ${data.accuracy.toFixed(3)}`);
+                        location.reload();
+                    } else {
+                        alert('Error training model: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+
+        function batchAssessAll() {
+            if (confirm('This will assess all patients for crisis risk. Continue?')) {
+                fetch('/provider/crisis_detection/batch_assess_all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Batch assessment complete! ${data.alerts_created} alerts created for ${data.total_patients} patients.`);
+                        location.reload();
+                    } else {
+                        alert('Error in batch assessment: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+
+        function assessPatientRisk(patientId) {
+            fetch('/api/crisis_detection/assess_risk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ patient_id: patientId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const risk = data.risk_assessment;
+                    alert(`Risk Assessment:\nLevel: ${risk.risk_level}\nProbability: ${(risk.crisis_risk * 100).toFixed(1)}%\nConfidence: ${risk.confidence}`);
+                    location.reload();
+                } else {
+                    alert('Error assessing risk: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+
+        function acknowledgeAlert(alertId) {
+            if (confirm('Mark this alert as acknowledged?')) {
+                // This would need to be implemented as an API endpoint
+                alert('Alert acknowledgment feature coming soon!');
+            }
+        }
+    </script>
+</body>
+</html>
